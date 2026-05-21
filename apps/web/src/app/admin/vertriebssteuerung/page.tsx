@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
+import { setIcpOverride } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -223,8 +224,9 @@ export default async function VertriebssteuerungPage() {
                       {d.days_stale} Tage ohne Aktivität · Owner {d.owner_external_id ?? "—"}
                     </div>
                   </div>
-                  <div className="text-xs flex items-center gap-3" style={{ color: "var(--color-muted)" }}>
+                  <div className="text-xs flex items-center gap-3 flex-wrap" style={{ color: "var(--color-muted)" }}>
                     <span>{d.value !== null ? formatMoney(d.value, d.currency) : "—"}</span>
+                    {d.org_external_id && <OverrideForm orgExternalId={d.org_external_id} currentIndustry={d.industry} />}
                     <a
                       href={pdLink(d.deal_external_id)}
                       target="_blank"
@@ -344,6 +346,33 @@ function SegmentCard({
         {openCount} offene Deals · {staleCount} stale
       </p>
     </div>
+  );
+}
+
+function OverrideForm({ orgExternalId, currentIndustry }: { orgExternalId: string; currentIndustry: Industry }) {
+  return (
+    <form action={setIcpOverride} className="flex items-center gap-1">
+      <input type="hidden" name="pipedrive_org_external_id" value={orgExternalId} />
+      <select
+        name="industry"
+        defaultValue={currentIndustry}
+        className="min-h-[36px] rounded-lg px-2 text-[12px]"
+        style={{ background: "var(--color-bg-elevated)", color: "var(--color-text)", border: "1px solid var(--color-line)" }}
+      >
+        <option value="commerce">E-Commerce</option>
+        <option value="hls">HLS</option>
+        <option value="bauwesen">Bauwesen</option>
+        <option value="other">Andere</option>
+      </select>
+      <button
+        type="submit"
+        className="min-h-[36px] px-2 rounded-lg text-[12px] font-semibold"
+        style={{ background: "var(--color-bg-elevated)", color: "var(--color-text)", border: "1px solid var(--color-line)" }}
+        title="Branche überschreiben"
+      >
+        ✓
+      </button>
+    </form>
   );
 }
 
