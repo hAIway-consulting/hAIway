@@ -17,9 +17,16 @@ import {
  * Operatives + strategisches Cockpit für unser Team. Gruppen:
  *  - Mission Control (Status + Plattform-Health)
  *  - Kunden (Pilotkunden)
+ *  - Vertrieb (eigene Pipeline — HAIway selbst als erster Tenant)
  *  - Plattform (Integrationen, KI-Settings, Retrieval)
  */
 const groups: NavGroup[] = [
+  {
+    label: "Vertrieb",
+    items: [
+      { href: "/admin/vertriebssteuerung", label: "Vertriebssteuerung", icon: IconChart },
+    ],
+  },
   {
     label: "Kunden",
     items: [

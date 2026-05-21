@@ -1,8 +1,111 @@
 import Link from "next/link";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
+import { requireOrgId } from "@/lib/db/org-context";
 import { listMyConversations } from "@/app/chat/actions";
 import { HeroAsk } from "./hero-ask";
 import { launchApp } from "./actions";
+
+type Industry = "commerce" | "hls" | "bauwesen" | "other" | "unclassified";
+const TARGET_ICPS: Industry[] = ["commerce", "hls", "bauwesen"];
+
+interface SalesSnapshot {
+  connected:               boolean;
+  focusQuote:              number;
+  targetWeighted:          number;
+  offTargetWeighted:       number;
+  activitiesThisWeek:      number;
+  activitiesLastWeek:      number;
+  staleDealCount:          number;
+}
+
+interface SalesKpiRow {
+  industry:                 Industry;
+  day:                      string;
+  activity_count:           number;
+  weighted_pipeline_value:  number;
+  stale_deal_count:         number;
+}
+
+function formatMoney(value: number): string {
+  try {
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
+  } catch {
+    return `${Math.round(value).toLocaleString("de-DE")} EUR`;
+  }
+}
+
+async function loadSalesSnapshot(): Promise<SalesSnapshot | null> {
+  let orgId: string;
+  try {
+    orgId = await requireOrgId();
+  } catch {
+    return null;
+  }
+  const db = await createUserClient();
+
+  const { data: integration } = await db
+    .from("organization_integrations")
+    .select("status")
+    .eq("organization_id", orgId)
+    .eq("provider_id", "pipedrive")
+    .maybeSingle<{ status: string }>();
+  if (!integration || integration.status !== "active") {
+    return { connected: false, focusQuote: 0, targetWeighted: 0, offTargetWeighted: 0, activitiesThisWeek: 0, activitiesLastWeek: 0, staleDealCount: 0 };
+  }
+
+  const now = new Date();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data: kpis } = await db
+    .from("sales_kpi_daily")
+    .select("industry, day, activity_count, weighted_pipeline_value, stale_deal_count")
+    .eq("organization_id", orgId)
+    .gte("day", fourteenDaysAgo);
+
+  const rows = (kpis ?? []) as SalesKpiRow[];
+  const latestByIndustry = new Map<Industry, SalesKpiRow>();
+  for (const r of rows) {
+    const prev = latestByIndustry.get(r.industry);
+    if (!prev || prev.day < r.day) latestByIndustry.set(r.industry, r);
+  }
+
+  const targetWeighted = TARGET_ICPS.reduce((s, i) => s + (latestByIndustry.get(i)?.weighted_pipeline_value ?? 0), 0);
+  const offIndustries = (["other", "unclassified"] as Industry[]);
+  const offTargetWeighted = offIndustries.reduce((s, i) => s + (latestByIndustry.get(i)?.weighted_pipeline_value ?? 0), 0);
+  const focusQuote = targetWeighted + offTargetWeighted > 0
+    ? Math.round((targetWeighted / (targetWeighted + offTargetWeighted)) * 100)
+    : 0;
+
+  const weekStart = startOfThisWeek(now);
+  const lastWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  let thisWeek = 0;
+  let lastWeek = 0;
+  for (const r of rows) {
+    if (!TARGET_ICPS.includes(r.industry)) continue;
+    if (r.day >= fmt(weekStart) && r.day <= fmt(now)) thisWeek += r.activity_count;
+    else if (r.day >= fmt(lastWeekStart) && r.day < fmt(weekStart)) lastWeek += r.activity_count;
+  }
+
+  const staleDealCount = TARGET_ICPS.reduce((s, i) => s + (latestByIndustry.get(i)?.stale_deal_count ?? 0), 0);
+
+  return {
+    connected:           true,
+    focusQuote,
+    targetWeighted,
+    offTargetWeighted,
+    activitiesThisWeek:  thisWeek,
+    activitiesLastWeek:  lastWeek,
+    staleDealCount,
+  };
+}
+
+function startOfThisWeek(ref: Date): Date {
+  const d = new Date(ref.getTime());
+  const day = d.getUTCDay() || 7;
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - (day - 1));
+  return d;
+}
 
 type Customer = {
   id: string;
@@ -67,11 +170,12 @@ export async function HaiwayMission() {
     firstName = cleaned.split(/\s+/)[0] ?? "";
   }
 
-  const [conversations, customers, outcome, appTelemetry] = await Promise.all([
+  const [conversations, customers, outcome, appTelemetry, sales] = await Promise.all([
     listMyConversations(3).catch(() => []),
     listCustomers().catch(() => [] as Customer[]),
     aggregateOutcome().catch(() => ({ hours_saved: 0, agent_runs: 0, source_growth: 0 })),
     loadAppTelemetry().catch(() => ({ topApps: [] as TopApp[], totalLaunches: 0 })),
+    loadSalesSnapshot().catch(() => null),
   ]);
 
   const launchCounts = new Map(appTelemetry.topApps.map((t) => [t.app_id, t.count] as const));
@@ -131,6 +235,63 @@ export async function HaiwayMission() {
           />
         </div>
       </section>
+
+      {/* ── Eigener Vertrieb ── */}
+      {sales && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col">
+              <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
+                Unser Vertrieb
+              </h2>
+              <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>
+                Eigene Pipeline · ICP-Fokus auf Commerce / HLS / Bauwesen
+              </span>
+            </div>
+            <Link
+              href="/admin/vertriebssteuerung"
+              className="text-[12px] font-medium"
+              style={{ color: "var(--color-accent)" }}
+            >
+              Cockpit öffnen →
+            </Link>
+          </div>
+          {!sales.connected ? (
+            <div
+              className="rounded-2xl p-5 text-center text-[13px]"
+              style={{ background: "var(--color-panel)", border: "1px dashed var(--color-line)", color: "var(--color-muted)" }}
+            >
+              Pipedrive nicht verbunden. <Link href="/admin/integrationen" style={{ color: "var(--color-accent)" }}>Jetzt verbinden →</Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <SalesTile
+                label="Pipeline-Fokus"
+                value={`${sales.focusQuote} %`}
+                sub={`${formatMoney(sales.targetWeighted)} in Zielbranche`}
+              />
+              <SalesTile
+                label="Aktivitäten Woche"
+                value={String(sales.activitiesThisWeek)}
+                sub={sales.activitiesLastWeek === 0
+                  ? "Erste Vergleichswoche"
+                  : `${sales.activitiesThisWeek >= sales.activitiesLastWeek ? "+" : ""}${Math.round(((sales.activitiesThisWeek - sales.activitiesLastWeek) / Math.max(1, sales.activitiesLastWeek)) * 100)}% vs. Vorwoche`}
+                tone={sales.activitiesThisWeek < sales.activitiesLastWeek ? "warn" : "default"}
+              />
+              <SalesTile
+                label="Stale Deals (ICP)"
+                value={String(sales.staleDealCount)}
+                tone={sales.staleDealCount > 0 ? "warn" : "default"}
+              />
+              <SalesTile
+                label="Off-ICP Volumen"
+                value={formatMoney(sales.offTargetWeighted)}
+                tone={sales.offTargetWeighted > sales.targetWeighted ? "warn" : "default"}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Operating Picture ── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -339,6 +500,31 @@ function StatusDot({ status }: { status: string }) {
   const color =
     status === "active" ? "var(--color-success)" : status === "paused" ? "var(--color-warning)" : "var(--color-muted)";
   return <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />;
+}
+
+function SalesTile({ label, value, sub, tone = "default" }: { label: string; value: string; sub?: string; tone?: "default" | "warn" }) {
+  return (
+    <div
+      className="rounded-2xl p-4 flex flex-col gap-1"
+      style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)" }}
+    >
+      <span className="text-[11px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
+        {label}
+      </span>
+      <span
+        className="text-xl md:text-2xl font-bold"
+        style={{
+          fontFamily: "var(--font-display)",
+          color: tone === "warn" ? "var(--color-danger)" : "var(--color-text)",
+        }}
+      >
+        {value}
+      </span>
+      {sub && (
+        <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>{sub}</span>
+      )}
+    </div>
+  );
 }
 
 function OutcomeStat({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" }) {
