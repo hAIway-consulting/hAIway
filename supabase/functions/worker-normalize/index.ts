@@ -35,7 +35,236 @@ const NORMALIZERS: Record<string, Normalizer> = {
   "google_calendar:calendar_event": normalizeGoogleCalendarEvent,
   "sharepoint:drive_item":          normalizeDriveItem,
   "google_drive:drive_item":        normalizeDriveItem,
+  "pipedrive:organization":         normalizePipedriveOrganization,
+  "pipedrive:person":               normalizePipedrivePerson,
+  "pipedrive:pipeline":             normalizePipedrivePipeline,
+  "pipedrive:stage":                normalizePipedriveStage,
+  "pipedrive:deal":                 normalizePipedriveDeal,
+  "pipedrive:activity":             normalizePipedriveActivity,
 };
+
+// ─── Pipedrive normalizers ─────────────────────────────────────────────
+// Each upserts the corresponding entities_pipedrive_* row on
+// (organization_id, external_id). Soft-delete on Pipedrive `active_flag=false`
+// or deal `status='deleted'`. The full payload stays in `raw` for later
+// re-projection without re-fetching.
+
+function pdStr(payload: Record<string, unknown>, key: string): string | null {
+  const v = payload[key];
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+function pdOwnerExternalId(payload: Record<string, unknown>): string | null {
+  // Pipedrive nests owner as { id, name, email, ... } in list payloads but
+  // returns a flat owner_id field on /recents pages. Handle both.
+  const owner = payload.owner_id;
+  if (typeof owner === "number") return String(owner);
+  if (typeof owner === "string" && owner) return owner;
+  if (owner && typeof owner === "object") {
+    const id = (owner as Record<string, unknown>).id;
+    if (typeof id === "number" || typeof id === "string") return String(id);
+  }
+  const userId = payload.user_id;
+  if (userId && typeof userId === "object") {
+    const id = (userId as Record<string, unknown>).id;
+    if (typeof id === "number" || typeof id === "string") return String(id);
+  }
+  return null;
+}
+
+function pdRefExternalId(payload: Record<string, unknown>, key: string): string | null {
+  const v = payload[key];
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string" && v) return v;
+  if (v && typeof v === "object") {
+    const id = (v as Record<string, unknown>).value ?? (v as Record<string, unknown>).id;
+    if (typeof id === "number" || typeof id === "string") return String(id);
+  }
+  return null;
+}
+
+function pdIsActive(payload: Record<string, unknown>): boolean {
+  const flag = payload.active_flag;
+  if (typeof flag === "boolean") return flag;
+  return true;
+}
+
+async function normalizePipedriveOrganization(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const { error } = await supabase
+    .from("entities_pipedrive_organizations")
+    .upsert({
+      organization_id:   msg.organization_id,
+      external_id:       msg.external_id,
+      payload_hash:      msg.payload_hash,
+      name:              pdStr(payload, "name"),
+      owner_external_id: pdOwnerExternalId(payload),
+      address:           pdStr(payload, "address"),
+      // first label is best-effort domain; Pipedrive doesn't surface one
+      domain:            pdStr(payload, "web") ?? pdStr(payload, "url"),
+      raw:               payload,
+      deleted_at:        pdIsActive(payload) ? null : new Date().toISOString(),
+      updated_at:        new Date().toISOString(),
+      synced_at:         new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
+
+async function normalizePipedrivePerson(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  // Pipedrive returns `email` + `phone` as arrays of { value, primary, label }.
+  function pickPrimary(field: unknown): string | null {
+    if (!Array.isArray(field) || field.length === 0) return null;
+    const primary = (field as Array<Record<string, unknown>>).find((e) => e.primary === true);
+    const chosen = primary ?? field[0];
+    const value = (chosen as Record<string, unknown>)?.value;
+    return typeof value === "string" && value ? value : null;
+  }
+  const { error } = await supabase
+    .from("entities_pipedrive_persons")
+    .upsert({
+      organization_id:   msg.organization_id,
+      external_id:       msg.external_id,
+      payload_hash:      msg.payload_hash,
+      name:              pdStr(payload, "name"),
+      email:             pickPrimary(payload.email),
+      phone:             pickPrimary(payload.phone),
+      org_external_id:   pdRefExternalId(payload, "org_id"),
+      owner_external_id: pdOwnerExternalId(payload),
+      raw:               payload,
+      deleted_at:        pdIsActive(payload) ? null : new Date().toISOString(),
+      updated_at:        new Date().toISOString(),
+      synced_at:         new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
+
+async function normalizePipedrivePipeline(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const { error } = await supabase
+    .from("entities_pipedrive_pipelines")
+    .upsert({
+      organization_id: msg.organization_id,
+      external_id:     msg.external_id,
+      payload_hash:    msg.payload_hash,
+      name:            pdStr(payload, "name"),
+      is_active:       pdIsActive(payload),
+      raw:             payload,
+      deleted_at:      pdIsActive(payload) ? null : new Date().toISOString(),
+      updated_at:      new Date().toISOString(),
+      synced_at:       new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
+
+async function normalizePipedriveStage(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const prob = payload.deal_probability;
+  const order = payload.order_nr;
+  const { error } = await supabase
+    .from("entities_pipedrive_stages")
+    .upsert({
+      organization_id:      msg.organization_id,
+      external_id:          msg.external_id,
+      payload_hash:         msg.payload_hash,
+      name:                 pdStr(payload, "name"),
+      pipeline_external_id: pdRefExternalId(payload, "pipeline_id"),
+      deal_probability:     typeof prob === "number" ? prob : null,
+      order_nr:             typeof order === "number" ? order : null,
+      is_active:            pdIsActive(payload),
+      raw:                  payload,
+      deleted_at:           pdIsActive(payload) ? null : new Date().toISOString(),
+      updated_at:           new Date().toISOString(),
+      synced_at:            new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
+
+async function normalizePipedriveDeal(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const status = pdStr(payload, "status");
+  const isDeleted = status === "deleted";
+  const value = payload.value;
+  const expected = pdStr(payload, "expected_close_date");
+  const last = pdStr(payload, "last_activity_date") ?? pdStr(payload, "next_activity_date");
+  const lastIso = last ? new Date(last).toISOString() : null;
+  const addTime = pdStr(payload, "add_time");
+  const updateTime = pdStr(payload, "update_time");
+  const { error } = await supabase
+    .from("entities_pipedrive_deals")
+    .upsert({
+      organization_id:       msg.organization_id,
+      external_id:           msg.external_id,
+      payload_hash:          msg.payload_hash,
+      title:                 pdStr(payload, "title"),
+      value:                 typeof value === "number" ? value : null,
+      currency:              pdStr(payload, "currency"),
+      status,
+      stage_external_id:     pdRefExternalId(payload, "stage_id"),
+      pipeline_external_id:  pdRefExternalId(payload, "pipeline_id"),
+      org_external_id:       pdRefExternalId(payload, "org_id"),
+      person_external_id:    pdRefExternalId(payload, "person_id"),
+      owner_external_id:     pdOwnerExternalId(payload),
+      expected_close_date:   expected,
+      add_time:              addTime ? new Date(addTime).toISOString() : null,
+      update_time:           updateTime ? new Date(updateTime).toISOString() : null,
+      last_activity_at:      lastIso,
+      raw:                   payload,
+      deleted_at:            isDeleted ? new Date().toISOString() : null,
+      updated_at:            new Date().toISOString(),
+      synced_at:             new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
+
+async function normalizePipedriveActivity(
+  msg: NormalizeMsg,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const done = payload.done;
+  const dueDate = pdStr(payload, "due_date");
+  const doneTime = pdStr(payload, "marked_as_done_time");
+  const addTime = pdStr(payload, "add_time");
+  const { error } = await supabase
+    .from("entities_pipedrive_activities")
+    .upsert({
+      organization_id:    msg.organization_id,
+      external_id:        msg.external_id,
+      payload_hash:       msg.payload_hash,
+      type:               pdStr(payload, "type"),
+      subject:            pdStr(payload, "subject"),
+      due_date:           dueDate,
+      due_time:           pdStr(payload, "due_time"),
+      done:               typeof done === "boolean" ? done : null,
+      done_time:          doneTime ? new Date(doneTime).toISOString() : null,
+      add_time:           addTime ? new Date(addTime).toISOString() : null,
+      deal_external_id:   pdRefExternalId(payload, "deal_id"),
+      person_external_id: pdRefExternalId(payload, "person_id"),
+      org_external_id:    pdRefExternalId(payload, "org_id"),
+      owner_external_id:  pdOwnerExternalId(payload),
+      raw:                payload,
+      deleted_at:         pdIsActive(payload) ? null : new Date().toISOString(),
+      updated_at:         new Date().toISOString(),
+      synced_at:          new Date().toISOString(),
+    }, { onConflict: "organization_id,external_id" });
+  if (error) throw error;
+}
 
 // Connector drive items: upsert into the sources table via the
 // connector-aware RPC, then enqueue an embed job if content changed.

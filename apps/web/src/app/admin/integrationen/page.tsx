@@ -1,7 +1,12 @@
 import { createServiceClient, createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { connectSharepoint, connectGdrive, triggerInitialSync } from "@/app/quellen/actions";
-import { replayJobFailureAction } from "./actions";
+import {
+  replayJobFailureAction,
+  connectPipedrive,
+  syncPipedriveNow,
+  disconnectPipedrive,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +55,14 @@ interface ConnectionRow {
   updated_at:  string | null;
 }
 
-export default async function IntegrationsAdminPage() {
+export default async function IntegrationsAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ pd_connected?: string; pd_error?: string }>;
+}) {
+  const sp = (await searchParams) ?? {};
+  const pdConnected = sp.pd_connected;
+  const pdError = sp.pd_error;
   const orgId = await requireOrgId();
   const supabase = createServiceClient();
   const userClient = await createUserClient();
@@ -145,6 +157,11 @@ export default async function IntegrationsAdminPage() {
             connectAction={connectGdrive}
             syncProviderId="google_drive"
             color="#1A73E8"
+          />
+          <PipedriveCard
+            connection={connectionByProvider.get("pipedrive") ?? null}
+            statusMessage={pdConnected ? "Verbindung aktiv" : pdError ?? null}
+            statusTone={pdError ? "error" : pdConnected ? "success" : null}
           />
         </div>
       </section>
@@ -400,5 +417,120 @@ function StatusPill({ status }: { status: string }) {
 function Empty({ text }: { text: string }) {
   return (
     <p className="text-sm" style={{ color: "var(--color-muted)" }}>{text}</p>
+  );
+}
+
+function PipedriveCard({
+  connection,
+  statusMessage,
+  statusTone,
+}: {
+  connection: ConnectionRow | null;
+  statusMessage: string | null;
+  statusTone: "success" | "error" | null;
+}) {
+  const isConnected = connection?.status === "active";
+  return (
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-3"
+      style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)", boxShadow: "var(--shadow-sm)" }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[15px] font-semibold" style={{ color: "var(--color-text)" }}>
+            Pipedrive
+          </span>
+          <span className="text-[12px] leading-snug" style={{ color: "var(--color-muted)" }}>
+            CRM-Anbindung für Vertriebssteuerung. Token aus Pipedrive-Einstellungen → Personal Preferences → API.
+          </span>
+        </div>
+        <span
+          className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-[12px] font-bold"
+          style={{ background: "#17C76418", color: "#17C764" }}
+          aria-hidden
+        >
+          PD
+        </span>
+      </div>
+
+      {statusMessage && (
+        <div
+          className="text-[12px] rounded-lg px-3 py-2"
+          style={{
+            background: statusTone === "error" ? "var(--color-danger-soft, #fee2e2)" : "var(--color-accent-soft)",
+            color:      statusTone === "error" ? "var(--color-danger)" : "var(--color-accent)",
+          }}
+        >
+          {statusMessage}
+        </div>
+      )}
+
+      {!isConnected ? (
+        <form action={connectPipedrive} className="flex flex-col gap-2">
+          <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
+            API-Token
+          </label>
+          <input
+            type="password"
+            name="api_token"
+            placeholder="abc123…"
+            required
+            className="min-h-[44px] rounded-lg px-3 text-sm"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-line)",
+              color: "var(--color-text)",
+            }}
+          />
+          <label className="text-[11px] font-semibold uppercase tracking-widest mt-1" style={{ color: "var(--color-placeholder)" }}>
+            Pipedrive-Subdomain (optional)
+          </label>
+          <input
+            type="text"
+            name="company_domain"
+            placeholder="meinefirma"
+            className="min-h-[44px] rounded-lg px-3 text-sm"
+            style={{
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-line)",
+              color: "var(--color-text)",
+            }}
+          />
+          <button
+            type="submit"
+            className="min-h-[44px] mt-2 rounded-lg text-sm font-semibold"
+            style={{ background: "var(--color-accent)", color: "var(--color-accent-text)" }}
+          >
+            Pipedrive verbinden
+          </button>
+        </form>
+      ) : (
+        <div className="flex flex-col gap-2 mt-auto pt-2 border-t" style={{ borderColor: "var(--color-line-soft)" }}>
+          <span className="text-[11px]" style={{ color: "var(--color-success)" }}>
+            Verbunden{connection?.updated_at ? " · " + new Date(connection.updated_at).toLocaleDateString("de-DE") : ""}
+          </span>
+          <div className="flex gap-2">
+            <form action={syncPipedriveNow}>
+              <button
+                type="submit"
+                className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold"
+                style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+              >
+                Jetzt synchronisieren
+              </button>
+            </form>
+            <form action={disconnectPipedrive}>
+              <button
+                type="submit"
+                className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold"
+                style={{ background: "var(--color-bg-elevated)", color: "var(--color-text)", border: "1px solid var(--color-line)" }}
+              >
+                Trennen
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -29,6 +29,7 @@ export function NavBerater({ hasPhoneAssistant }: { hasPhoneAssistant?: boolean 
     {
       label: "Outcome",
       items: [
+        { href: "/admin/vertriebssteuerung", label: "Vertriebssteuerung", icon: IconChart },
         { href: "/admin/retrieval-qualitaet", label: "KPIs", icon: IconChart },
       ],
     },
