@@ -2,6 +2,12 @@ import { createServiceClient, createUserClient } from "@/lib/db/supabase-server"
 import { requireOrgId } from "@/lib/db/org-context";
 import { connectSharepoint, connectGdrive, triggerInitialSync } from "@/app/quellen/actions";
 import { replayJobFailureAction } from "./actions";
+import {
+  metaFor,
+  connectKindLabel,
+  VIRTUAL_PROVIDERS,
+  type ProviderMeta,
+} from "./provider-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +56,20 @@ interface ConnectionRow {
   updated_at:  string | null;
 }
 
+interface ProviderRow {
+  id:        string;
+  name:      string;
+  category:  string;
+  auth_type: string;
+  is_active: boolean;
+}
+
 export default async function IntegrationsAdminPage() {
   const orgId = await requireOrgId();
   const supabase = createServiceClient();
   const userClient = await createUserClient();
 
-  const [{ data: runs }, { data: failures }, { data: kpis }, { data: connections }] = await Promise.all([
+  const [{ data: runs }, { data: failures }, { data: kpis }, { data: connections }, { data: providers }] = await Promise.all([
     supabase
       .from("integration_runs")
       .select("*")
@@ -79,12 +93,19 @@ export default async function IntegrationsAdminPage() {
       .from("organization_integrations")
       .select("provider_id, status, updated_at")
       .eq("organization_id", orgId),
+    supabase
+      .from("integration_providers")
+      .select("id, name, category, auth_type, is_active")
+      .eq("is_active", true)
+      .order("category", { ascending: true })
+      .order("name",     { ascending: true }),
   ]);
 
-  const runRows:     RunRow[]     = (runs     ?? []) as RunRow[];
-  const failureRows: FailureRow[] = (failures ?? []) as FailureRow[];
-  const kpiRows:     KpiRow[]     = (kpis     ?? []) as KpiRow[];
+  const runRows:        RunRow[]        = (runs        ?? []) as RunRow[];
+  const failureRows:    FailureRow[]    = (failures    ?? []) as FailureRow[];
+  const kpiRows:        KpiRow[]        = (kpis        ?? []) as KpiRow[];
   const connectionRows: ConnectionRow[] = (connections ?? []) as ConnectionRow[];
+  const providerRows:   ProviderRow[]   = (providers   ?? []) as ProviderRow[];
 
   const totals = kpiRows.reduce(
     (acc, k) => ({
@@ -98,6 +119,32 @@ export default async function IntegrationsAdminPage() {
 
   const connectionByProvider = new Map(connectionRows.map((c) => [c.provider_id, c] as const));
 
+  // Server actions cannot live inside a serializable map, so resolve the
+  // server-action name from provider-meta into a real reference here.
+  const actionLookup = { connectSharepoint, connectGdrive } as const;
+
+  type ConnectorCardInput = {
+    providerId: string;
+    name:       string;
+    meta:       ProviderMeta;
+    connection: ConnectionRow | null;
+  };
+
+  const cards: ConnectorCardInput[] = [
+    ...providerRows.map((p) => ({
+      providerId: p.id,
+      name:       p.name,
+      meta:       metaFor(p.id),
+      connection: connectionByProvider.get(p.id) ?? null,
+    })),
+    ...VIRTUAL_PROVIDERS.map((v) => ({
+      providerId: v.id,
+      name:       v.name,
+      meta:       v.meta,
+      connection: connectionByProvider.get(v.statusFrom) ?? null,
+    })),
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -108,7 +155,7 @@ export default async function IntegrationsAdminPage() {
           Datenquellen verbinden + Sync-Status
         </h1>
         <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-          Verknüpfe SharePoint, OneDrive oder Google Drive mit deiner Org. Pipeline-Logs und Fehler stehen darunter.
+          Verknüpfe externe Tools mit deiner Org. Provider werden aus der Plattform-Registry geladen — Sync-Logs und Fehler stehen darunter.
         </p>
       </header>
 
@@ -117,35 +164,17 @@ export default async function IntegrationsAdminPage() {
         <h2 className="text-[12px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--color-placeholder)" }}>
           Datenquellen anbinden
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <ConnectorCard
-            providerId="sharepoint"
-            name="SharePoint"
-            description="Microsoft 365 Sites + Dokumentenbibliotheken via Microsoft Graph."
-            connection={connectionByProvider.get("sharepoint") ?? null}
-            connectAction={connectSharepoint}
-            syncProviderId="sharepoint"
-            color="#0078D4"
-          />
-          <ConnectorCard
-            providerId="onedrive"
-            name="OneDrive"
-            description="Persönliche + Team-OneDrive — nutzt denselben Microsoft-Login wie SharePoint."
-            connection={connectionByProvider.get("onedrive") ?? null}
-            connectAction={connectSharepoint}
-            syncProviderId="sharepoint"
-            color="#0078D4"
-            note="Anbindung läuft über den gemeinsamen Microsoft-OAuth-Flow (SharePoint-Tenant)."
-          />
-          <ConnectorCard
-            providerId="google_drive"
-            name="Google Drive"
-            description="Shared Drives + persönliche Drives via Google OAuth."
-            connection={connectionByProvider.get("google_drive") ?? null}
-            connectAction={connectGdrive}
-            syncProviderId="google_drive"
-            color="#1A73E8"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {cards.map((c) => (
+            <ConnectorCard
+              key={c.providerId}
+              providerId={c.providerId}
+              name={c.name}
+              meta={c.meta}
+              connection={c.connection}
+              connectAction={c.meta.serverAction ? actionLookup[c.meta.serverAction] : undefined}
+            />
+          ))}
         </div>
       </section>
 
@@ -246,24 +275,24 @@ export default async function IntegrationsAdminPage() {
 function ConnectorCard({
   providerId,
   name,
-  description,
+  meta,
   connection,
   connectAction,
-  syncProviderId,
-  color,
-  note,
 }: {
-  providerId: string;
-  name: string;
-  description: string;
-  connection: ConnectionRow | null;
-  connectAction: () => Promise<void>;
-  syncProviderId: "sharepoint" | "google_drive";
-  color: string;
-  note?: string;
+  providerId:    string;
+  name:          string;
+  meta:          ProviderMeta;
+  connection:    ConnectionRow | null;
+  connectAction: (() => Promise<void>) | undefined;
 }) {
   const isConnected = connection?.status === "connected" || connection?.status === "active";
-  const syncAction = triggerInitialSync.bind(null, syncProviderId);
+  const isAvailable = meta.connectKind !== "coming-soon" && !!connectAction;
+  const syncProviderId =
+    meta.syncProviderId === "sharepoint" || meta.syncProviderId === "google_drive"
+      ? meta.syncProviderId
+      : null;
+  const syncAction = syncProviderId ? triggerInitialSync.bind(null, syncProviderId) : null;
+
   return (
     <div
       className="rounded-2xl p-5 flex flex-col gap-3"
@@ -275,21 +304,28 @@ function ConnectorCard({
             {name}
           </span>
           <span className="text-[12px] leading-snug" style={{ color: "var(--color-muted)" }}>
-            {description}
+            {meta.description}
           </span>
         </div>
         <span
           className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-[12px] font-bold"
-          style={{ background: `${color}18`, color }}
+          style={{ background: `${meta.color}18`, color: meta.color }}
           aria-hidden
         >
           {name.slice(0, 2).toUpperCase()}
         </span>
       </div>
 
-      {note && (
+      <span
+        className="self-start text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full"
+        style={{ background: "var(--color-bg-elevated)", color: "var(--color-muted)" }}
+      >
+        {connectKindLabel(meta.connectKind)}
+      </span>
+
+      {meta.note && (
         <span className="text-[11px]" style={{ color: "var(--color-placeholder)" }}>
-          {note}
+          {meta.note}
         </span>
       )}
 
@@ -297,10 +333,12 @@ function ConnectorCard({
         <span className="text-[11px]" style={{ color: isConnected ? "var(--color-success)" : "var(--color-placeholder)" }}>
           {isConnected
             ? `Verbunden${connection?.updated_at ? " · " + new Date(connection.updated_at).toLocaleDateString("de-DE") : ""}`
-            : "Nicht verbunden"}
+            : isAvailable
+              ? "Nicht verbunden"
+              : "Setup folgt"}
         </span>
         <div className="flex items-center gap-1.5">
-          {isConnected && (
+          {isConnected && syncAction && (
             <form action={syncAction}>
               <button
                 type="submit"
@@ -311,19 +349,35 @@ function ConnectorCard({
               </button>
             </form>
           )}
-          <form action={connectAction}>
+          {isAvailable && connectAction ? (
+            <form action={connectAction}>
+              <button
+                type="submit"
+                className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold"
+                style={{
+                  background: isConnected ? "var(--color-bg-elevated)" : "var(--color-accent)",
+                  color:      isConnected ? "var(--color-text)"        : "var(--color-accent-text)",
+                  border:     isConnected ? "1px solid var(--color-line)" : "none",
+                }}
+              >
+                {isConnected ? "Neu verbinden" : `${name} verbinden`}
+              </button>
+            </form>
+          ) : (
             <button
-              type="submit"
-              className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold"
+              type="button"
+              disabled
+              title="Auth-Adapter folgt in einem nächsten PR"
+              className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold cursor-not-allowed"
               style={{
-                background: isConnected ? "var(--color-bg-elevated)" : "var(--color-accent)",
-                color: isConnected ? "var(--color-text)" : "var(--color-accent-text)",
-                border: isConnected ? "1px solid var(--color-line)" : "none",
+                background: "var(--color-bg-elevated)",
+                color:      "var(--color-placeholder)",
+                border:     "1px dashed var(--color-line)",
               }}
             >
-              {isConnected ? "Neu verbinden" : `${name} verbinden`}
+              Bald verfügbar
             </button>
-          </form>
+          )}
         </div>
       </div>
       <span hidden data-provider-id={providerId} />
