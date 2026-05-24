@@ -38,6 +38,56 @@ export async function connectGdrive(): Promise<void> {
   redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 }
 
+// Trello has no OAuth 2.0 — only OAuth 1.0a or the simpler 1-Click Token
+// Authorization that Zapier/Notion/Make all use. We use the latter: redirect
+// the user to trello.com/1/authorize with our platform API key. After
+// "Allow" they land back on /auth/callback/trello with the token in the
+// URL FRAGMENT (not the query string), so the callback page must be a
+// client component that extracts it from window.location.hash.
+export async function connectTrello(): Promise<void> {
+  const apiKey = process.env.TRELLO_API_KEY;
+  if (!apiKey) throw new Error("TRELLO_API_KEY not set on the platform");
+  const returnUrl = `${await getAppUrl()}/auth/callback/trello`;
+  const params = new URLSearchParams({
+    expiration:    "never",
+    name:          "hAIway",
+    scope:         "read,write",
+    response_type: "token",
+    key:           apiKey,
+    return_url:    returnUrl,
+  });
+  redirect(`https://trello.com/1/authorize?${params.toString()}`);
+}
+
+// Persist the Trello token after the client-side callback extracts it from
+// the URL fragment. Status starts as 'configuring' because the wizard still
+// needs to capture board_id + default_list_id before the connector can act.
+export async function saveTrelloToken(token: string): Promise<void> {
+  if (!token || typeof token !== "string" || token.length < 20) {
+    throw new Error("invalid trello token");
+  }
+  const orgId = await requireOrgId();
+  const db = createServiceClient();
+  const { error } = await db
+    .from("organization_integrations")
+    .upsert(
+      {
+        organization_id: orgId,
+        provider_id:     "trello",
+        status:          "configuring",
+        error_message:   null,
+        credential_mode: "platform",
+        credentials:     { token },
+      },
+      { onConflict: "organization_id,provider_id" },
+    );
+  if (error) {
+    console.error("[saveTrelloToken] upsert failed:", error);
+    throw error;
+  }
+  revalidatePath("/admin/integrationen");
+}
+
 // Trigger an initial-sync for the given provider via the edge function.
 // Surfaces HTTP + function errors back to /quellen via a search param so
 // the user sees why nothing happened after clicking "Jetzt synchronisieren".

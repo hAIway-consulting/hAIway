@@ -9,7 +9,6 @@
 //   - "oauth-server-action": existing server action initiates OAuth redirect
 //   - "wizard":              guided form (e.g. Shopware client credentials)
 //   - "credentials-form":    plain username/password form (e.g. IMAP)
-//   - "webhook-setup":       show generated URL + secret to paste elsewhere
 //   - "oauth-token-grant":   Trello-style 1-click token authorization
 //   - "coming-soon":         no adapter yet — disabled with explainer
 
@@ -17,7 +16,6 @@ export type ConnectKind =
   | "oauth-server-action"
   | "wizard"
   | "credentials-form"
-  | "webhook-setup"
   | "oauth-token-grant"
   | "coming-soon";
 
@@ -26,12 +24,13 @@ export interface ProviderMeta {
   description:  string;
   note?:        string;
   connectKind:  ConnectKind;
-  // The server action name (resolved at render time) for oauth-server-action
-  // kind. Other kinds will be wired in follow-up PRs.
-  serverAction?: "connectSharepoint" | "connectGdrive";
-  // The provider id we sync against if it differs from the card's id
-  // (OneDrive piggybacks SharePoint's connection).
+  // Name of the server action page.tsx's actionLookup resolves to a real
+  // function reference. Add to that map when introducing a new action.
+  serverAction?: "connectSharepoint" | "connectGdrive" | "connectTrello";
+  // The provider id we sync against if it differs from the card's id.
   syncProviderId?: string;
+  // Route the "configuring"-state CTA points to (post-auth wizard).
+  configuringRoute?: string;
 }
 
 export const PROVIDER_META: Record<string, ProviderMeta> = {
@@ -68,10 +67,12 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     note:         "Shopware bietet keinen Drittapp-OAuth — Wizard mit Client-ID/Secret folgt.",
   },
   trello: {
-    color:        "#0079bf",
-    description:  "Cards + Boards. Verbindung via 1-Click-Token (Trello unterstützt kein OAuth 2.0).",
-    connectKind:  "oauth-token-grant",
-    note:         "Implementierung folgt im nächsten PR.",
+    color:            "#0079bf",
+    description:      "Cards + Boards. 1-Click-Token-Authorize (Trello hat kein OAuth 2.0).",
+    connectKind:      "oauth-token-grant",
+    serverAction:     "connectTrello",
+    configuringRoute: "/admin/integrationen/trello/setup",
+    note:             "Nach dem Verbinden Board + Liste auswählen.",
   },
   imap_inbox: {
     color:        "#7d8da1",
@@ -79,37 +80,17 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     connectKind:  "credentials-form",
     note:         "Formular + Connection-Test folgt im nächsten PR.",
   },
-  inbound_mail_webhook: {
-    color:        "#7d8da1",
-    description:  "Mail-Forwarding-Endpoint (Postmark, Resend, Cloudflare Email). HMAC-signiert.",
-    connectKind:  "webhook-setup",
-    note:         "Wizard mit generierter URL + Shared Secret folgt im nächsten PR.",
-  },
 };
 
-// OneDrive isn't a separate DB provider — it piggybacks on SharePoint.
-// Surface it as a virtual card so users see it as an option.
+// Virtual providers are UI-only cards that piggyback on another provider's
+// connection row. Empty for now; structure stays so we can re-introduce
+// without touching the rendering loop.
 export const VIRTUAL_PROVIDERS: Array<{
   id:          string;
   name:        string;
   meta:        ProviderMeta;
-  // The actual DB provider whose connection row we read for status.
   statusFrom:  string;
-}> = [
-  {
-    id:   "onedrive",
-    name: "OneDrive",
-    statusFrom: "sharepoint",
-    meta: {
-      color:         "#0078D4",
-      description:   "Persönliche + Team-OneDrive — nutzt denselben Microsoft-Login wie SharePoint.",
-      note:          "Anbindung läuft über den gemeinsamen Microsoft-OAuth-Flow (SharePoint-Tenant).",
-      connectKind:   "oauth-server-action",
-      serverAction:  "connectSharepoint",
-      syncProviderId: "sharepoint",
-    },
-  },
-];
+}> = [];
 
 export function metaFor(providerId: string): ProviderMeta {
   return PROVIDER_META[providerId] ?? {
@@ -124,7 +105,6 @@ export function connectKindLabel(kind: ConnectKind): string {
     case "oauth-server-action": return "OAuth 2.0";
     case "wizard":              return "Geführter Wizard";
     case "credentials-form":    return "Benutzerdaten";
-    case "webhook-setup":       return "Webhook-URL";
     case "oauth-token-grant":   return "Token-Authorize";
     case "coming-soon":         return "In Vorbereitung";
   }
