@@ -31,10 +31,19 @@ async function getConfig(orgId: string): Promise<TrelloConfig> {
     .maybeSingle<{ credentials: Partial<TrelloConfig> }>();
   if (error) throw error;
   const c = data?.credentials;
-  if (!c?.api_key || !c.token || !c.board_id) {
+  if (!c?.token || !c.board_id) {
     throw new Error("trello integration not configured for this org");
   }
-  return c as TrelloConfig;
+  // api_key is platform-wide (developer key registered at trello.com/app-key);
+  // the per-tenant token is bound to it through the 1-click grant.
+  const apiKey = Deno.env.get("TRELLO_API_KEY");
+  if (!apiKey) throw new Error("TRELLO_API_KEY env var not set on the platform");
+  return {
+    api_key:         apiKey,
+    token:           c.token,
+    board_id:        c.board_id,
+    default_list_id: c.default_list_id,
+  };
 }
 
 Deno.serve(async (req) => {

@@ -1,6 +1,6 @@
 import { createServiceClient, createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
-import { connectSharepoint, connectGdrive, triggerInitialSync } from "@/app/quellen/actions";
+import { connectSharepoint, connectGdrive, connectTrello, triggerInitialSync } from "@/app/quellen/actions";
 import { replayJobFailureAction } from "./actions";
 import {
   metaFor,
@@ -121,7 +121,7 @@ export default async function IntegrationsAdminPage() {
 
   // Server actions cannot live inside a serializable map, so resolve the
   // server-action name from provider-meta into a real reference here.
-  const actionLookup = { connectSharepoint, connectGdrive } as const;
+  const actionLookup = { connectSharepoint, connectGdrive, connectTrello } as const;
 
   type ConnectorCardInput = {
     providerId: string;
@@ -285,8 +285,9 @@ function ConnectorCard({
   connection:    ConnectionRow | null;
   connectAction: (() => Promise<void>) | undefined;
 }) {
-  const isConnected = connection?.status === "connected" || connection?.status === "active";
-  const isAvailable = meta.connectKind !== "coming-soon" && !!connectAction;
+  const isConnected   = connection?.status === "connected" || connection?.status === "active";
+  const isConfiguring = connection?.status === "configuring";
+  const isAvailable   = meta.connectKind !== "coming-soon" && !!connectAction;
   const syncProviderId =
     meta.syncProviderId === "sharepoint" || meta.syncProviderId === "google_drive"
       ? meta.syncProviderId
@@ -330,14 +331,32 @@ function ConnectorCard({
       )}
 
       <div className="flex items-center justify-between gap-3 mt-auto pt-2 border-t" style={{ borderColor: "var(--color-line-soft)" }}>
-        <span className="text-[11px]" style={{ color: isConnected ? "var(--color-success)" : "var(--color-placeholder)" }}>
+        <span
+          className="text-[11px]"
+          style={{
+            color: isConnected   ? "var(--color-success)"  :
+                   isConfiguring ? "var(--color-warning)"  :
+                                   "var(--color-placeholder)",
+          }}
+        >
           {isConnected
             ? `Verbunden${connection?.updated_at ? " · " + new Date(connection.updated_at).toLocaleDateString("de-DE") : ""}`
-            : isAvailable
-              ? "Nicht verbunden"
-              : "Setup folgt"}
+            : isConfiguring
+              ? "Setup unvollständig"
+              : isAvailable
+                ? "Nicht verbunden"
+                : "Setup folgt"}
         </span>
         <div className="flex items-center gap-1.5">
+          {isConfiguring && meta.configuringRoute && (
+            <a
+              href={meta.configuringRoute}
+              className="min-h-[36px] px-3 inline-flex items-center rounded-lg text-[12px] font-semibold"
+              style={{ background: "var(--color-warning-soft, var(--color-accent-soft))", color: "var(--color-warning, var(--color-accent))" }}
+            >
+              Setup abschließen →
+            </a>
+          )}
           {isConnected && syncAction && (
             <form action={syncAction}>
               <button
