@@ -34,6 +34,10 @@ export interface ProviderMeta {
   // Route the "connect" CTA points to for wizard providers that have no
   // preceding OAuth step (the wizard itself is the entry point, e.g. Shopware).
   setupRoute?: string;
+  // Preferred connect route when a richer flow exists alongside the plain
+  // wizard (e.g. Shopware App-System install). Rendered as the primary CTA;
+  // `setupRoute` becomes the secondary "manual" fallback.
+  appSetupRoute?: string;
 }
 
 export const PROVIDER_META: Record<string, ProviderMeta> = {
@@ -64,11 +68,12 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     note:         "Setup-Wizard folgt.",
   },
   shopware: {
-    color:        "#189eff",
-    description:  "Shopware 6 — Bestellungen, Kunden, Retouren. Auth via Admin-Integration.",
-    connectKind:  "wizard",
-    setupRoute:   "/admin/integrationen/shopware/setup",
-    note:         "Shop-URL + Client-ID/Secret aus der Shopware-Integration eingeben.",
+    color:         "#189eff",
+    description:   "Shopware 6 — Bestellungen, Kunden, Retouren. Auth via Admin-Integration.",
+    connectKind:   "wizard",
+    appSetupRoute: "/admin/integrationen/shopware/app",
+    setupRoute:    "/admin/integrationen/shopware/setup",
+    note:          "Empfohlen: per App-System. Alternativ manuell mit Client-ID/Secret.",
   },
   trello: {
     color:            "#0079bf",

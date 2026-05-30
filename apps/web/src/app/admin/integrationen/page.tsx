@@ -287,7 +287,7 @@ function ConnectorCard({
 }) {
   const isConnected   = connection?.status === "connected" || connection?.status === "active";
   const isConfiguring = connection?.status === "configuring";
-  const isAvailable   = meta.connectKind !== "coming-soon" && (!!connectAction || !!meta.setupRoute);
+  const isAvailable   = meta.connectKind !== "coming-soon" && (!!connectAction || !!meta.setupRoute || !!meta.appSetupRoute);
   const syncProviderId =
     meta.syncProviderId === "sharepoint" || meta.syncProviderId === "google_drive"
       ? meta.syncProviderId
@@ -382,18 +382,29 @@ function ConnectorCard({
                 {isConnected ? "Neu verbinden" : `${name} verbinden`}
               </button>
             </form>
-          ) : isAvailable && meta.setupRoute ? (
-            <a
-              href={meta.setupRoute}
-              className="min-h-[36px] px-3 inline-flex items-center rounded-lg text-[12px] font-semibold"
-              style={{
-                background: isConnected ? "var(--color-bg-elevated)" : "var(--color-accent)",
-                color:      isConnected ? "var(--color-text)"        : "var(--color-accent-text)",
-                border:     isConnected ? "1px solid var(--color-line)" : "none",
-              }}
-            >
-              {isConnected ? "Neu verbinden" : `${name} verbinden`}
-            </a>
+          ) : isAvailable && (meta.appSetupRoute || meta.setupRoute) ? (
+            <>
+              {meta.appSetupRoute && meta.setupRoute && (
+                <a
+                  href={meta.setupRoute}
+                  className="min-h-[36px] px-2 inline-flex items-center text-[11px]"
+                  style={{ color: "var(--color-muted)", textDecoration: "underline" }}
+                >
+                  Manuell
+                </a>
+              )}
+              <a
+                href={meta.appSetupRoute ?? meta.setupRoute}
+                className="min-h-[36px] px-3 inline-flex items-center rounded-lg text-[12px] font-semibold"
+                style={{
+                  background: isConnected ? "var(--color-bg-elevated)" : "var(--color-accent)",
+                  color:      isConnected ? "var(--color-text)"        : "var(--color-accent-text)",
+                  border:     isConnected ? "1px solid var(--color-line)" : "none",
+                }}
+              >
+                {isConnected ? "Neu verbinden" : `${name} verbinden`}
+              </a>
+            </>
           ) : (
             <button
               type="button"
