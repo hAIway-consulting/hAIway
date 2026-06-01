@@ -8,7 +8,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/db/supabase-server";
-import { getAppUrl } from "@/lib/app-url";
+import { getShopwareAppUrl } from "@/lib/app-url";
 import {
   appSecret,
   buildProof,
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "failed to persist registration" }, { status: 500 });
   }
 
-  const appUrl = await getAppUrl();
+  const appUrl = await getShopwareAppUrl();
   return NextResponse.json({
     proof:            buildProof(shopId, shopUrl),
     secret:           shopSecret,

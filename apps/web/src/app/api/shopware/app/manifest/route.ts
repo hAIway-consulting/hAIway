@@ -10,7 +10,7 @@ import { Buffer } from "node:buffer";
 import { NextResponse } from "next/server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { createServiceClient } from "@/lib/db/supabase-server";
-import { getAppUrl } from "@/lib/app-url";
+import { getShopwareAppUrl } from "@/lib/app-url";
 import { appName, appSecret, generateClaimToken } from "@/lib/shopware/app-signature";
 import { createStoredZip } from "@/lib/shopware/zip";
 
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const appUrl = await getAppUrl();
+  const appUrl = await getShopwareAppUrl();
   const registrationUrl = `${appUrl}/api/shopware/app/register?claim=${claim}`;
   const name = appName();
   const xml = buildManifest({ name, secret: appSecret(), registrationUrl });

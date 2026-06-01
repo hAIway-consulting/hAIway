@@ -95,3 +95,17 @@ test("register rejects an invalid signature", async ({ page }) => {
   });
   expect(res.status()).toBe(401);
 });
+
+test("register is reachable without a user session (auth middleware bypass)", async ({ request }) => {
+  // Shopware calls register server-to-server with no cookies. The auth
+  // middleware must let it through to the HMAC check, NOT bounce it to the
+  // login page — otherwise Shopware gets HTML and "JSON could not be decoded".
+  // The `request` fixture carries no session, unlike page.request after login.
+  const res = await request.get(
+    "/api/shopware/app/register?claim=x&shop-id=s&shop-url=https%3A%2F%2Fx&timestamp=1",
+    { maxRedirects: 0 },
+  );
+  expect(res.status(), "must not redirect to login").toBeGreaterThanOrEqual(400);
+  expect(res.status()).toBeLessThan(500);
+  expect(res.headers()["content-type"]).toContain("application/json");
+});
