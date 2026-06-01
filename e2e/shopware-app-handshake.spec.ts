@@ -14,7 +14,8 @@ function hmac(message: string, secret: string): string {
 }
 
 async function fetchManifest(request: APIRequestContext): Promise<{ appSecret: string; appName: string; claim: string }> {
-  const res = await request.get("/api/shopware/app/manifest");
+  // `?format=xml` returns the raw manifest; the default download is a ZIP.
+  const res = await request.get("/api/shopware/app/manifest?format=xml");
   expect(res.status(), "manifest download must succeed (SHOPWARE_APP_SECRET set?)").toBe(200);
   const xml = await res.text();
   const appSecret = xml.match(/<secret>([^<]+)<\/secret>/)?.[1];
@@ -37,6 +38,21 @@ test.beforeEach(async ({ page }) => {
 test("manifest download exposes registrationUrl with a claim token", async ({ page }) => {
   const { claim } = await fetchManifest(page.request);
   expect(claim.length).toBeGreaterThan(20);
+});
+
+test("default download is an upload-ready ZIP with <AppName>/manifest.xml", async ({ page }) => {
+  const { appName } = await fetchManifest(page.request);
+  const res = await page.request.get("/api/shopware/app/manifest");
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("application/zip");
+  expect(res.headers()["content-disposition"]).toContain(".zip");
+
+  const buf = await res.body();
+  // ZIP local-file-header magic: bytes 80 75 3 4 (the "PK" signature).
+  expect([...buf.subarray(0, 4)]).toEqual([80, 75, 3, 4]);
+  // Manifest must sit inside a root folder named after the app — a bare
+  // manifest.xml at the archive root is what Shopware rejects.
+  expect(buf.includes(Buffer.from(`${appName}/manifest.xml`, "utf8"))).toBe(true);
 });
 
 test("full handshake: register + confirm flips the integration to active", async ({ page }) => {

@@ -6,11 +6,13 @@
 // this endpoint (re)creates the pending claim row; it never clobbers already
 // active credentials (e.g. from the manual wizard fallback).
 
+import { Buffer } from "node:buffer";
 import { NextResponse } from "next/server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { createServiceClient } from "@/lib/db/supabase-server";
 import { getAppUrl } from "@/lib/app-url";
 import { appName, appSecret, generateClaimToken } from "@/lib/shopware/app-signature";
+import { createStoredZip } from "@/lib/shopware/zip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +49,7 @@ function buildManifest(opts: { name: string; secret: string; registrationUrl: st
 `;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const orgId = await requireOrgId();
 
   try {
@@ -92,12 +94,30 @@ export async function GET() {
 
   const appUrl = await getAppUrl();
   const registrationUrl = `${appUrl}/api/shopware/app/register?claim=${claim}`;
-  const xml = buildManifest({ name: appName(), secret: appSecret(), registrationUrl });
+  const name = appName();
+  const xml = buildManifest({ name, secret: appSecret(), registrationUrl });
 
-  return new NextResponse(xml, {
+  // `?format=xml` returns the raw manifest for inspection/testing. The default
+  // download is the upload-ready ZIP: Shopware needs `<AppName>/manifest.xml`
+  // inside an archive, not a bare manifest.xml ("No manifest.xml found").
+  if (new URL(request.url).searchParams.get("format") === "xml") {
+    return new NextResponse(xml, {
+      headers: {
+        "Content-Type":  "application/xml; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  const zip = createStoredZip([
+    { name: `${name}/`, data: Buffer.alloc(0) },
+    { name: `${name}/manifest.xml`, data: Buffer.from(xml, "utf8") },
+  ]);
+
+  return new NextResponse(new Uint8Array(zip), {
     headers: {
-      "Content-Type":        "application/xml; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${appName()}-manifest.xml"`,
+      "Content-Type":        "application/zip",
+      "Content-Disposition": `attachment; filename="${name}.zip"`,
       "Cache-Control":       "no-store",
     },
   });

@@ -11,8 +11,8 @@ interface ShopwareConfig {
 }
 
 const STEPS = [
-  "Manifest unten herunterladen (enthält deinen einmaligen Verknüpfungs-Token).",
-  "Im Shopware-Admin: Erweiterungen → Meine Erweiterungen → Erweiterung hochladen → die Manifest-Datei wählen.",
+  "App-Paket (ZIP) unten herunterladen (enthält deinen einmaligen Verknüpfungs-Token).",
+  "Im Shopware-Admin: Erweiterungen → Meine Erweiterungen → Erweiterung hochladen → die heruntergeladene ZIP-Datei wählen.",
   "Die App installieren und aktivieren — Shopware verbindet sich dann automatisch mit hAIway.",
   "Diese Seite neu laden: Der Status wechselt nach erfolgreicher Installation auf „Verbunden“.",
 ];
@@ -88,17 +88,17 @@ export default async function ShopwareAppPage() {
 
       <div className="flex flex-col gap-3 rounded-xl p-5" style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)" }}>
         <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "var(--color-placeholder)" }}>
-          Manifest
+          App-Paket
         </span>
         <a
           href="/api/shopware/app/manifest"
           className="self-start min-h-[44px] px-5 inline-flex items-center rounded-lg text-sm font-semibold"
           style={{ background: "var(--color-accent)", color: "var(--color-accent-text)" }}
         >
-          Manifest herunterladen
+          App-Paket (ZIP) herunterladen
         </a>
         <span className="text-[11px]" style={{ color: "var(--color-placeholder)" }}>
-          Die Datei enthält einen einmaligen Token, der den Shop mit dieser Org verknüpft. Nicht weitergeben.
+          Das ZIP enthält die Manifest-Datei mit einem einmaligen Token, der den Shop mit dieser Org verknüpft. Nicht weitergeben.
         </span>
       </div>
 
