@@ -67,20 +67,6 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Shopware App-System handshake endpoints are called server-to-server by
-  // Shopware with no user session and are secured by their own HMAC signatures
-  // (shopware-app-signature / shopware-shop-signature). They must bypass the
-  // auth gate — otherwise the unauthenticated request is redirected to the
-  // login page and Shopware fails with "JSON response could not be decoded".
-  // The manifest download (/api/shopware/app/manifest) stays gated: the logged-
-  // in consultant fetches it.
-  if (
-    pathname === "/api/shopware/app/register" ||
-    pathname === "/api/shopware/app/confirm"
-  ) {
-    return supabaseResponse;
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();

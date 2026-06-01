@@ -78,17 +78,3 @@ export async function getAppUrl(): Promise<string> {
 export function getAppUrlSync(): string {
   return fromExplicit() ?? fromVercelUrl() ?? "http://localhost:3000";
 }
-
-/**
- * Stable, public base URL of the Shopware app server (manifest registrationUrl
- * + confirmation_url). Shopware calls these server-to-server during the install
- * handshake, so — unlike OAuth redirects — they must resolve to ONE durable,
- * publicly reachable host for every merchant, never an ephemeral preview
- * deployment. Set SHOPWARE_APP_URL to the public production URL; falls back to
- * `getAppUrl()` so local dev / e2e keep working.
- */
-export async function getShopwareAppUrl(): Promise<string> {
-  const explicit = process.env.SHOPWARE_APP_URL;
-  if (explicit && explicit.length > 0) return explicit.replace(/\/$/, "");
-  return getAppUrl();
-}
