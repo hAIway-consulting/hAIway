@@ -52,8 +52,12 @@ export async function GET() {
 
   try {
     appSecret();
-  } catch {
-    return NextResponse.json({ error: "SHOPWARE_APP_SECRET not configured on the platform" }, { status: 500 });
+  } catch (err) {
+    // Surface the precise reason (missing vs. too short) in both the response
+    // and the runtime logs — the previous generic message hid which it was.
+    const reason = err instanceof Error ? err.message : "SHOPWARE_APP_SECRET unavailable";
+    console.error("[shopware] manifest blocked:", reason);
+    return NextResponse.json({ error: reason }, { status: 500 });
   }
 
   const db = createServiceClient();

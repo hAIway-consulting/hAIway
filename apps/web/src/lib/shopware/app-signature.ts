@@ -23,8 +23,14 @@ export function appName(): string {
 
 export function appSecret(): string {
   const secret = process.env.SHOPWARE_APP_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("SHOPWARE_APP_SECRET not set (or too short) on the platform");
+  if (!secret) {
+    // Most common cause: the env var was added on Vercel AFTER this deployment
+    // was built — env vars are baked in at deploy time, so a fresh redeploy is
+    // required for an existing deployment to see a newly added variable.
+    throw new Error("SHOPWARE_APP_SECRET is not set on this deployment (add it on Vercel, then redeploy)");
+  }
+  if (secret.length < 16) {
+    throw new Error(`SHOPWARE_APP_SECRET is too short (${secret.length} chars; need at least 16)`);
   }
   return secret;
 }
