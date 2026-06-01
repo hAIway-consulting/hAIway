@@ -31,6 +31,9 @@ export interface ProviderMeta {
   syncProviderId?: string;
   // Route the "configuring"-state CTA points to (post-auth wizard).
   configuringRoute?: string;
+  // Route the "connect" CTA points to for wizard providers that have no
+  // preceding OAuth step (the wizard itself is the entry point, e.g. Shopware).
+  setupRoute?: string;
 }
 
 export const PROVIDER_META: Record<string, ProviderMeta> = {
@@ -64,7 +67,8 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     color:        "#189eff",
     description:  "Shopware 6 — Bestellungen, Kunden, Retouren. Auth via Admin-Integration.",
     connectKind:  "wizard",
-    note:         "Shopware bietet keinen Drittapp-OAuth — Wizard mit Client-ID/Secret folgt.",
+    setupRoute:   "/admin/integrationen/shopware/setup",
+    note:         "Manuell mit Client-ID/Secret aus einer Shopware-Admin-Integration.",
   },
   trello: {
     color:            "#0079bf",
