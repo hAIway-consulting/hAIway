@@ -43,7 +43,7 @@ function buildManifest(opts: { name: string; secret: string; registrationUrl: st
     <permissions>
         <read>order</read>
         <read>customer</read>
-        <write>order_return</write>
+        <create>order_return</create>
     </permissions>
 </manifest>
 `;
