@@ -60,3 +60,50 @@ export async function createCard(
   });
   return await call<TrelloCard>(cfg, `/cards?${params.toString()}`, { method: "POST" });
 }
+
+// ── Read + organise (used by the chat agent's Trello tools) ───────────────
+
+export interface TrelloList {
+  id:   string;
+  name: string;
+}
+
+export interface TrelloBoardCard {
+  id:               string;
+  name:             string;
+  idList:           string;
+  dateLastActivity: string; // ISO — last time the card was touched
+  shortUrl:         string;
+}
+
+/** Open lists of the tenant's configured board. */
+export async function listOpenLists(cfg: TrelloConfig): Promise<TrelloList[]> {
+  return await call<TrelloList[]>(
+    cfg,
+    `/boards/${cfg.board_id}/lists?fields=id,name&filter=open`,
+  );
+}
+
+/** Open (non-archived) cards of the tenant's configured board, with activity. */
+export async function listOpenCards(cfg: TrelloConfig): Promise<TrelloBoardCard[]> {
+  return await call<TrelloBoardCard[]>(
+    cfg,
+    `/boards/${cfg.board_id}/cards?fields=id,name,idList,dateLastActivity,shortUrl&filter=open`,
+  );
+}
+
+/** Create a new list on the board (e.g. a "stale cards" category). */
+export async function createList(cfg: TrelloConfig, name: string): Promise<TrelloList> {
+  const params = new URLSearchParams({ name, idBoard: cfg.board_id, pos: "bottom" });
+  return await call<TrelloList>(cfg, `/lists?${params.toString()}`, { method: "POST" });
+}
+
+/** Move a card to another list (reversible — never deletes). */
+export async function moveCard(
+  cfg:    TrelloConfig,
+  cardId: string,
+  listId: string,
+): Promise<TrelloCard> {
+  const params = new URLSearchParams({ idList: listId });
+  return await call<TrelloCard>(cfg, `/cards/${cardId}?${params.toString()}`, { method: "PUT" });
+}

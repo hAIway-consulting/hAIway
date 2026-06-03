@@ -6,6 +6,7 @@ import { btn, input, styles } from "@/components/ui/table-classes";
 
 type Tone = "formal" | "casual" | "neutral";
 type Lang = "de" | "en";
+type AgentProvider = "" | "anthropic" | "openai-compatible";
 
 const MAX_PROMPT = 4000;
 
@@ -13,10 +14,16 @@ export default function AiSettingsForm(props: {
   initialPrompt: string;
   initialTone: Tone;
   initialLanguage: Lang;
+  initialAgentProvider: AgentProvider;
+  initialAgentModel: string;
+  initialAgentBaseUrl: string;
 }) {
   const [prompt, setPrompt] = useState(props.initialPrompt);
   const [tone, setTone] = useState<Tone>(props.initialTone);
   const [language, setLanguage] = useState<Lang>(props.initialLanguage);
+  const [agentProvider, setAgentProvider] = useState<AgentProvider>(props.initialAgentProvider);
+  const [agentModel, setAgentModel] = useState(props.initialAgentModel);
+  const [agentBaseUrl, setAgentBaseUrl] = useState(props.initialAgentBaseUrl);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -26,6 +33,9 @@ export default function AiSettingsForm(props: {
         system_prompt: prompt.slice(0, MAX_PROMPT),
         tone,
         language,
+        agent_provider: agentProvider,
+        agent_model: agentModel,
+        agent_base_url: agentBaseUrl,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -81,6 +91,63 @@ export default function AiSettingsForm(props: {
             <option value="de">Deutsch</option>
             <option value="en">English</option>
           </select>
+        </div>
+      </div>
+
+      {/* Agentic model (tool-calling) — pluggable provider incl. local */}
+      <div className="flex flex-col gap-3 rounded-xl p-4" style={styles.panel}>
+        <div>
+          <label className={input.label} style={{ color: "var(--color-text)" }}>
+            Agent-Modell (Tool-Calling)
+          </label>
+          <p className={input.hint} style={styles.muted}>
+            Steuert den Agenten im Chat (Auswertungen, Integrations-Daten, Trello-Aktionen). Leer =
+            Plattform-Standard. Für ein lokal gehostetes Modell „OpenAI-kompatibel“ wählen und die
+            Base-URL setzen.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className={input.label} style={{ color: "var(--color-text)" }}>
+              Provider
+            </label>
+            <select
+              value={agentProvider}
+              onChange={(e) => setAgentProvider(e.target.value as AgentProvider)}
+              className={input.base}
+              style={styles.input}
+            >
+              <option value="">Plattform-Standard</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="openai-compatible">OpenAI-kompatibel / lokal</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={input.label} style={{ color: "var(--color-text)" }}>
+              Modell-Name
+            </label>
+            <input
+              type="text"
+              value={agentModel}
+              onChange={(e) => setAgentModel(e.target.value)}
+              placeholder="z.B. claude-sonnet-4-6 oder llama3.1"
+              className={input.base}
+              style={styles.input}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className={input.label} style={{ color: "var(--color-text)" }}>
+            Base-URL (nur für lokale / OpenAI-kompatible Endpoints)
+          </label>
+          <input
+            type="text"
+            value={agentBaseUrl}
+            onChange={(e) => setAgentBaseUrl(e.target.value)}
+            placeholder="http://localhost:11434/v1"
+            className={input.base}
+            style={styles.input}
+          />
         </div>
       </div>
 

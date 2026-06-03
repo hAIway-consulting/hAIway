@@ -15,6 +15,10 @@ import type { ChunkSearchResult } from "@/lib/db/queries/search";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { getOpenAIKeyForChat } from "./embeddings";
+import { runAgent } from "./agent/runAgent";
+import { resolveAgentConfig } from "./agent/config";
+import { AGENT_TOOLS } from "./agent/registry";
+import type { AgentMessage } from "./agent/types";
 
 export type ModelId = "claude" | "gpt-4o" | "gpt-4o-mini";
 
@@ -55,6 +59,16 @@ Harte Regeln:
    - Sonst: gehe die Quellen SYSTEMATISCH von oben nach unten durch und liste JEDEN passenden Eintrag. Kuerze nichts. Gib am Ende "Gefunden: N Eintraege." aus. Wenn die Quellen nur konzeptionell ueber die Kategorie reden, wende Fall 2b an.
 5. Antworte praezise und in der Sprache der Frage (Default: Deutsch).`;
 
+const TOOLS_RULES = `
+
+Zusaetzlich stehen dir WERKZEUGE (Tools) zur Verfuegung, um strukturierte Echtzeit-Daten der Organisation abzufragen oder Aktionen auszufuehren:
+- Fragen zu Automatisierungen, Reklamationen/Tickets oder Integrations-Statistiken ("wie viele Reklamationen", "welche Automatisierungen laufen/sind aktiv", "Auswertung aller Reklamationsfaelle") -> nutze die passenden Tools. Deren Ergebnisse sind autoritativ und zaehlen wie Quellen; du brauchst dafuer KEINE [Q]-Marker.
+- Trello-Fragen oder -Aufraeumen -> nutze die Trello-Tools.
+- Inhaltliche Wissensfragen ueber Dokumente -> weiterhin AUSSCHLIESSLICH aus den oben gelieferten [Q]-Quellen (die harten Regeln gelten).
+- Wenn weder Tools noch Quellen die Antwort liefern: sage transparent, dass dir die Information fehlt. Erfinde nichts.
+
+Trello-Bereinigung (Tool cleanup_stale_trello_cards): Hol IMMER zuerst die Vorschau (ohne confirm), zeige dem Nutzer die betroffenen Karten + die Ziel-Liste und bitte um Bestaetigung. Rufe das Tool mit confirm=true NUR, wenn der Nutzer im Gespraech ausdruecklich zugestimmt hat. Es wird nur verschoben, nie geloescht.`;
+
 type OrgAiSettings = {
   system_prompt?: string | null;
   tone?: "formal" | "casual" | "neutral" | null;
@@ -79,11 +93,13 @@ export async function loadOrgAiSettings(): Promise<OrgAiSettings> {
 
 export async function buildSystemPrompt(
   entityContext?: string,
+  withTools = false,
 ): Promise<string> {
   const ai = await loadOrgAiSettings();
   const today = new Date().toISOString().slice(0, 10);
 
   const parts = [BASE_RULES];
+  if (withTools) parts.push(TOOLS_RULES);
 
   if (ai.system_prompt && ai.system_prompt.trim()) {
     parts.push(`\nUnternehmens-Anweisung:\n${ai.system_prompt.trim()}`);
@@ -327,6 +343,54 @@ async function callOpenAI(
 }
 
 /**
+ * Run the configured agentic model with the tool registry. Returns null when
+ * no agent provider is available or it produced no text, so the caller can
+ * fall back to the pure-RAG path.
+ */
+async function tryAgentAnswer(p: {
+  history: ChatTurn[];
+  question: string;
+  chunks: ChunkSearchResult[];
+  entityContext?: string;
+  rewrittenQuery?: string;
+  orgId: string;
+  userId?: string;
+}): Promise<ChatResponse | null> {
+  try {
+    const cfg = await resolveAgentConfig(p.orgId);
+    if (!cfg.available) return null;
+
+    const systemPrompt = await buildSystemPrompt(p.entityContext, true);
+    const contextBlock = p.chunks.length ? buildContextBlock(p.chunks) : "(keine Dokument-Treffer)";
+    const messages: AgentMessage[] = [
+      ...p.history.map((h) => ({ role: h.role, content: h.content })),
+      { role: "user", content: `Dokument-Quellen:\n\n${contextBlock}\n\n---\n\nFrage: ${p.question}` },
+    ];
+
+    const result = await runAgent({
+      orgId:    p.orgId,
+      userId:   p.userId,
+      system:   systemPrompt,
+      messages,
+      tools:    AGENT_TOOLS,
+    });
+    if (!result || !result.text.trim()) return null;
+
+    const modelId: ModelId = cfg.kind === "anthropic" ? "claude" : "gpt-4o";
+    return {
+      type:           "answer",
+      text:           result.text,
+      sources:        p.chunks,
+      model:          modelId,
+      rewrittenQuery: p.rewrittenQuery,
+      entityContext:  p.entityContext,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Generate an answer with hallucination guard.
  *
  * - history: previous turns from the conversation (excluding the current user question)
@@ -340,9 +404,23 @@ export async function generateAnswer(params: {
   entityContext?: string;
   rewrittenQuery?: string;
   model?: ModelId;
+  orgId?: string;
+  userId?: string;
 }): Promise<ChatResponse> {
-  const { history, question, chunks, entityContext, rewrittenQuery } = params;
+  const { history, question, chunks, entityContext, rewrittenQuery, orgId, userId } = params;
   const model: ModelId = params.model ?? "claude";
+
+  // Agent (tool-calling) path: answers structured/integration/Trello questions
+  // via tools while still passing the retrieved chunks as document context.
+  // The provider is the org/env-configured agentic model (Anthropic or any
+  // OpenAI-compatible endpoint, incl. locally hosted). Falls back to pure RAG
+  // when no agent provider is available or the agent yields nothing.
+  if (orgId) {
+    const agent = await tryAgentAnswer({
+      history, question, chunks, entityContext, rewrittenQuery, orgId, userId,
+    });
+    if (agent) return agent;
+  }
 
   // Hallucination guard: with no chunks, return a deterministic refusal
   // wrapped as an answer (not "chunks") so the UI shows it inline.

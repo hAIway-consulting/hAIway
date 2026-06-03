@@ -96,3 +96,46 @@ export async function getOrchestratorStatus(
     missing,
   };
 }
+
+// ── Automation registry (shared by customer dashboard + chat agent tool) ──
+
+export interface Automation {
+  key:         string;
+  name:        string;
+  description: string;
+  active:      boolean;
+  kpi:         WorkflowKpi;
+}
+
+// Code-level registry of the automations we ship. Currently one; extendable.
+const AUTOMATION_REGISTRY: {
+  key: string; name: string; description: string; requires: string[];
+}[] = [
+  {
+    key:         WORKFLOW_KEY,
+    name:        "Reklamations-Orchestrator",
+    description: "Erstellt aus Shopware-Reklamationen automatisch Trello-Karten.",
+    requires:    ["shopware", "trello"],
+  },
+];
+
+/** All known automations with live active-state + KPIs for the given org. */
+export async function listAutomations(orgId: string): Promise<Automation[]> {
+  const ready = await orchestratorIntegrationsReady(orgId);
+  const readyMap: Record<string, boolean> = {
+    shopware: ready.shopware,
+    trello:   ready.trello,
+  };
+  const out: Automation[] = [];
+  for (const a of AUTOMATION_REGISTRY) {
+    const kpi = await getWorkflowKpi(orgId, a.key);
+    out.push({
+      key:         a.key,
+      name:        a.name,
+      description: a.description,
+      active:      a.requires.every((r) => readyMap[r] ?? false),
+      kpi,
+    });
+  }
+  return out;
+}

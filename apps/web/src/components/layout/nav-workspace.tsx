@@ -5,6 +5,7 @@ import {
   IconSearch,
   IconChat,
   IconPhone,
+  IconBox,
   NavLink,
   NavGroupBlock,
   type NavGroup,
@@ -22,6 +23,7 @@ export function NavWorkspace({ hasPhoneAssistant }: { hasPhoneAssistant?: boolea
       items: [
         { href: "/chat", label: "Chats", icon: IconChat },
         { href: "/search", label: "Suchen", icon: IconSearch },
+        { href: "/automatisierungen", label: "Automatisierungen", icon: IconBox },
       ],
     },
   ];

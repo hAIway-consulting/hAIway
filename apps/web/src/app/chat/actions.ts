@@ -358,6 +358,8 @@ export async function sendMessage(
     entityContext,
     rewrittenQuery: searchQuery !== trimmed ? searchQuery : undefined,
     model,
+    orgId,
+    userId,
   });
 
   // 6. Telemetry — persist retrieval signals alongside the assistant message

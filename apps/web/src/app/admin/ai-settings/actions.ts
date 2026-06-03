@@ -8,6 +8,10 @@ type Payload = {
   system_prompt: string;
   tone: "formal" | "casual" | "neutral";
   language: "de" | "en";
+  // Agentic model (tool-calling). Empty provider = platform default (env).
+  agent_provider: "" | "anthropic" | "openai-compatible";
+  agent_model: string;
+  agent_base_url: string;
 };
 
 export async function saveAiSettings(payload: Payload): Promise<void> {
@@ -28,6 +32,12 @@ export async function saveAiSettings(payload: Payload): Promise<void> {
       system_prompt: payload.system_prompt.trim(),
       tone: payload.tone,
       language: payload.language,
+      // Resolved by lib/ai/agent/config.ts; empty values fall back to env.
+      agent: {
+        provider: payload.agent_provider,
+        model: payload.agent_model.trim(),
+        base_url: payload.agent_base_url.trim(),
+      },
     },
   };
 
