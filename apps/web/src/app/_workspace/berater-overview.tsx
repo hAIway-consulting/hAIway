@@ -4,6 +4,7 @@ import { listConversations } from "@/app/chat/actions";
 import { getOrganization } from "@/lib/db/queries/organization";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
+import { getWorkflowKpi, type WorkflowKpi } from "@/lib/db/queries/workflows";
 
 function relativeTime(iso: string, now = new Date()): string {
   const then = new Date(iso);
@@ -29,12 +30,13 @@ function relativeTime(iso: string, now = new Date()): string {
  */
 export async function BeraterOverview() {
   const orgId = await requireOrgId();
-  const [org, sourceCount, conversations, members, syncLogs] = await Promise.all([
+  const [org, sourceCount, conversations, members, syncLogs, workflowKpi] = await Promise.all([
     getOrganization().catch(() => null),
     countReadySources().catch(() => 0),
     listConversations(8).catch(() => []),
     countActiveMembers(orgId).catch(() => 0),
     recentSyncEvents(orgId).catch(() => [] as SyncEvent[]),
+    getWorkflowKpi(orgId).catch(() => null),
   ]);
 
   // Live-Event-Stream: jüngste Konversationen + jüngste Sync-Events sortiert.
@@ -86,6 +88,14 @@ export async function BeraterOverview() {
           tone="success"
           href="/admin/retrieval-qualitaet"
         />
+      </section>
+
+      {/* Reklamations-Orchestrator */}
+      <section className="mt-8">
+        <h2 className="text-[12px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--color-placeholder)" }}>
+          Automatisierungen
+        </h2>
+        <OrchestratorCard kpi={workflowKpi} />
       </section>
 
       {/* Events + Aktionen */}
@@ -176,6 +186,67 @@ async function recentSyncEvents(orgId: string): Promise<SyncEvent[]> {
     status: (row as { status: "success" | "error" | "skipped" }).status,
     occurred_at: (row as { occurred_at: string }).occurred_at,
   }));
+}
+
+function OrchestratorCard({ kpi }: { kpi: WorkflowKpi | null }) {
+  const k = kpi ?? { total: 0, success: 0, failed: 0, running: 0, last_run_at: null, avg_duration_ms: null };
+  const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : null;
+  const handlungsbedarf = k.failed > 0;
+  return (
+    <Link
+      href="/admin/automatisierungen"
+      className="block rounded-2xl p-5 transition-all hover:-translate-y-0.5"
+      style={{
+        background: "var(--color-panel)",
+        border: handlungsbedarf ? "1px solid var(--color-danger)" : "1px solid var(--color-line)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+    >
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[15px] font-semibold truncate" style={{ color: "var(--color-text)" }}>
+            Reklamations-Orchestrator
+          </span>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+            style={{ background: "var(--color-success-soft)", color: "var(--color-success)" }}
+          >
+            Aktiv
+          </span>
+        </div>
+        <span className="text-[16px] shrink-0" style={{ color: "var(--color-accent)" }}>→</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <OrchestratorStat label="Tickets" value={String(k.total)} />
+        <OrchestratorStat label="Erfolgsquote" value={rate == null ? "—" : `${rate}%`} tone="success" />
+        <OrchestratorStat label="Fehler" value={String(k.failed)} tone={handlungsbedarf ? "danger" : "default"} />
+      </div>
+
+      {handlungsbedarf ? (
+        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-danger)" }}>
+          ⚠ Handlungsbedarf: {k.failed} {k.failed === 1 ? "Ticket" : "Tickets"} fehlgeschlagen — bitte prüfen.
+        </p>
+      ) : (
+        <p className="text-[12px] mt-3" style={{ color: "var(--color-muted)" }}>
+          Shopware → Trello · {k.last_run_at ? `letzter Lauf ${relativeTime(k.last_run_at)}` : "noch kein Lauf"}
+        </p>
+      )}
+    </Link>
+  );
+}
+
+function OrchestratorStat({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "danger" }) {
+  const color =
+    tone === "success" ? "var(--color-success)" :
+    tone === "danger"  ? "var(--color-danger)"  :
+                         "var(--color-text)";
+  return (
+    <div className="rounded-xl p-3" style={{ background: "var(--color-bg)" }}>
+      <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>{label}</span>
+      <p className="text-xl font-bold mt-0.5" style={{ fontFamily: "var(--font-display)", color }}>{value}</p>
+    </div>
+  );
 }
 
 function KpiCard({
