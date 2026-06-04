@@ -2,6 +2,8 @@ import Link from "next/link";
 import { listMyConversations } from "@/app/chat/actions";
 import { countReadySources } from "@/lib/db/queries/sources";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
+import { requireOrgId } from "@/lib/db/org-context";
+import { listAutomations, type Automation } from "@/lib/db/queries/workflows";
 import { HeroAsk } from "./hero-ask";
 import { AgentTile } from "./agent-tile";
 import { STUB_AGENTS } from "./agents";
@@ -50,6 +52,13 @@ export async function WorkspaceHome() {
     listMyConversations(5).catch(() => []),
     countReadySources().catch(() => 0),
   ]);
+
+  let automations: Automation[] = [];
+  try {
+    automations = await listAutomations(await requireOrgId());
+  } catch {
+    automations = [];
+  }
 
   const lastChatTime = conversations[0]?.last_message_at;
 
@@ -101,6 +110,25 @@ export async function WorkspaceHome() {
           />
         </div>
       </section>
+
+      {/* ── Automatisierungen ── */}
+      {automations.length > 0 && (
+        <section className="w-full max-w-5xl mt-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
+              Automatisierungen
+            </h2>
+            <Link href="/automatisierungen" className="text-[12px] font-medium" style={{ color: "var(--color-accent)" }}>
+              Details →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {automations.map((a) => (
+              <AutomationCard key={a.key} a={a} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Deine Agenten ── */}
       <section className="w-full max-w-5xl mt-10">
@@ -218,6 +246,61 @@ function StatCard({
           {hint}
         </span>
       )}
+    </div>
+  );
+}
+
+function AutomationCard({ a }: { a: Automation }) {
+  const rate = a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null;
+  const handlungsbedarf = a.kpi.failed > 0;
+  return (
+    <Link
+      href="/automatisierungen"
+      className="block rounded-2xl p-5 transition-all hover:-translate-y-0.5"
+      style={{
+        background: "var(--color-panel)",
+        border: handlungsbedarf ? "1px solid var(--color-danger)" : "1px solid var(--color-line)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="text-[15px] font-semibold truncate" style={{ color: "var(--color-text)" }}>
+          {a.name}
+        </span>
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+          style={{
+            background: a.active ? "var(--color-success-soft)" : "var(--color-bg-elevated)",
+            color: a.active ? "var(--color-success)" : "var(--color-muted)",
+          }}
+        >
+          {a.active ? "Aktiv" : "Inaktiv"}
+        </span>
+      </div>
+      <p className="text-[12px] mb-3" style={{ color: "var(--color-muted)" }}>{a.description}</p>
+      <div className="flex gap-5">
+        <AutoStat label="Tickets" value={String(a.kpi.total)} />
+        <AutoStat label="Erfolg" value={rate == null ? "—" : `${rate}%`} tone="success" />
+        <AutoStat label="Fehler" value={String(a.kpi.failed)} tone={handlungsbedarf ? "danger" : "default"} />
+      </div>
+      {handlungsbedarf && (
+        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-danger)" }}>
+          ⚠ {a.kpi.failed} {a.kpi.failed === 1 ? "Fall benötigt" : "Fälle benötigen"} Aufmerksamkeit.
+        </p>
+      )}
+    </Link>
+  );
+}
+
+function AutoStat({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "danger" }) {
+  const color =
+    tone === "success" ? "var(--color-success)" :
+    tone === "danger"  ? "var(--color-danger)"  :
+                         "var(--color-text)";
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>{label}</span>
+      <span className="text-lg font-bold leading-tight" style={{ fontFamily: "var(--font-display)", color }}>{value}</span>
     </div>
   );
 }
