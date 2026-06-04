@@ -26,6 +26,7 @@ export default function ChatLayout(props: {
   messages: StoredMessage[];
   conversations: ConversationListItem[];
   models: ModelOption[];
+  defaultAgentModel?: string;
   isAdmin?: boolean;
   variant?: ChatVariant;
 }) {
@@ -40,6 +41,7 @@ export default function ChatLayout(props: {
           conversation={props.conversation}
           initialMessages={props.messages}
           models={props.models}
+          defaultAgentModel={props.defaultAgentModel}
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => {}}
           variant="workspace"
@@ -95,6 +97,7 @@ export default function ChatLayout(props: {
           conversation={props.conversation}
           initialMessages={props.messages}
           models={props.models}
+          defaultAgentModel={props.defaultAgentModel}
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => setDrawerOpen(true)}
           variant="default"

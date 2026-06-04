@@ -27,6 +27,8 @@ import {
   type ChatTurn,
   type ModelId,
 } from "@/lib/ai/chat";
+import { runAgent } from "@/lib/ai/agent-loop";
+import { resolveOrgModel } from "@/lib/ai/models";
 
 export type ConversationListItem = {
   id: string;
@@ -443,4 +445,180 @@ export async function sendMessage(
 
 export async function getAvailableModels() {
   return availableModels();
+}
+
+// ── Agent-Modus (Tool-Calling-Loop) ───────────────────────────────────────
+// Additiver Pfad neben sendMessage(). Der produktive RAG-Chat bleibt
+// unangetastet; dieser Zweig fährt den provider-agnostischen Agent-Loop.
+
+export type AgentStepSummary = {
+  tool: string;
+  ok: boolean;
+  latencyMs: number;
+};
+
+export type AgentChatResponse = {
+  type: "agent";
+  text: string;
+  sources: ChunkSearchResult[];
+  steps: AgentStepSummary[];
+  model: string;
+  stopReason: string;
+};
+
+/** Default-Agent-Modell der aktiven Org (für den Modell-Picker). */
+export async function getDefaultAgentModel(): Promise<string> {
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const { data } = await db
+    .from("organizations")
+    .select("metadata")
+    .eq("id", orgId)
+    .single();
+  return resolveOrgModel((data?.metadata ?? null) as Record<string, unknown> | null);
+}
+
+// JSONB-Output cappen, damit ein grosses Tool-Ergebnis die Audit-Zeile nicht sprengt.
+function clampJson(value: unknown): unknown {
+  if (value === undefined) return null;
+  const str = JSON.stringify(value);
+  if (str.length > 4000) return { preview: str.slice(0, 4000), truncated: true };
+  return value;
+}
+
+export async function sendAgentMessage(
+  conversationId: string,
+  question: string,
+  model?: string,
+): Promise<AgentChatResponse> {
+  const startedAt = Date.now();
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const trimmed = question.trim();
+  if (!trimmed) {
+    return { type: "agent", text: "", sources: [], steps: [], model: model ?? "", stopReason: "empty" };
+  }
+
+  const { data: { user } } = await db.auth.getUser();
+  const userId = user?.id;
+
+  // 1. History laden
+  const { data: historyRows } = await db
+    .from("chat_messages")
+    .select("role, content, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  const allHistory = (historyRows ?? []).filter(
+    (m): m is { role: "user" | "assistant"; content: string; created_at: string } =>
+      m.role === "user" || m.role === "assistant",
+  );
+  const history: ChatTurn[] = allHistory
+    .slice(-HISTORY_WINDOW)
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  // 2. User-Message sofort persistieren
+  await db.from("chat_messages").insert({
+    conversation_id: conversationId,
+    organization_id: orgId,
+    role: "user",
+    content: trimmed,
+  });
+
+  // 3. Modell auflösen (explizit → Org-Default) + Agent-Loop fahren
+  const chosenModel = model || (await getDefaultAgentModel());
+  const result = await runAgent({
+    orgId,
+    userId,
+    question: trimmed,
+    history,
+    model: chosenModel,
+  });
+
+  // 4. Quellen aus den search_knowledge-Steps extrahieren (für UI + Persistenz)
+  const sources: ChunkSearchResult[] = [];
+  const seen = new Set<string>();
+  for (const s of result.steps) {
+    if (s.tool !== "search_knowledge" || !s.ok || !s.result || typeof s.result !== "object") continue;
+    const r = s.result as { sources?: Array<{ id: string; title: string; type: string; text: string }> };
+    for (const src of r.sources ?? []) {
+      const key = `${src.id}:${src.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      sources.push({
+        id: src.id,
+        source_id: src.id,
+        chunk_index: 0,
+        chunk_text: src.text,
+        source_title: src.title,
+        source_type: src.type,
+        rank: 1,
+        retrieved_via: "hybrid",
+      });
+    }
+  }
+
+  const latencyMs = Date.now() - startedAt;
+
+  // 5. Assistant-Message persistieren (token_usage = bisher ungenutzte Spalte)
+  const { data: inserted } = await db
+    .from("chat_messages")
+    .insert({
+      conversation_id: conversationId,
+      organization_id: orgId,
+      role: "assistant",
+      content: result.finalText,
+      sources: sources as unknown as object[],
+      model: result.model,
+      token_usage: result.usage as unknown as object,
+      latency_ms: latencyMs,
+      chunks_retrieved: sources.length,
+    })
+    .select("id")
+    .single()
+    .throwOnError();
+
+  const messageId = (inserted as { id: string } | null)?.id ?? null;
+
+  // 6. Audit-Spur: jeden Tool-Call protokollieren (Strategie-Pflicht)
+  if (result.steps.length > 0) {
+    await db.from("agent_tool_calls").insert(
+      result.steps.map((s, i) => ({
+        organization_id: orgId,
+        conversation_id: conversationId,
+        message_id: messageId,
+        user_id: userId ?? null,
+        step_index: i,
+        tool_key: s.tool,
+        category: s.category,
+        input: s.input as unknown as object,
+        output_summary: clampJson(s.result) as unknown as object,
+        status: s.status,
+        error_message: s.error ?? null,
+        latency_ms: s.latencyMs,
+        model: result.model,
+      })),
+    );
+  }
+
+  // 7. Auto-Titel beim ersten Turn
+  if (allHistory.length === 0) {
+    const title = await generateChatTitle(trimmed);
+    await db
+      .from("chat_conversations")
+      .update({ title, model: result.model })
+      .eq("id", conversationId)
+      .eq("organization_id", orgId);
+  }
+
+  revalidatePath("/chat", "layout");
+
+  return {
+    type: "agent",
+    text: result.finalText,
+    sources,
+    steps: result.steps.map((s) => ({ tool: s.tool, ok: s.ok, latencyMs: s.latencyMs })),
+    model: result.model,
+    stopReason: result.stopReason,
+  };
 }

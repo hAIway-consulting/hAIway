@@ -3,15 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { sendMessage } from "../actions";
+import { sendMessage, sendAgentMessage } from "../actions";
 import type { ConversationListItem, StoredMessage } from "../actions";
 import type { ChatResponse, ModelId } from "@/lib/ai/chat";
+import { SUPPORTED_MODELS, DEFAULT_MODEL_STRING } from "@/lib/ai/models";
 import { card, badge, btn, input, styles } from "@/components/ui/table-classes";
 import RetrievalDebug from "./retrieval-debug";
 import { ChatComposer } from "./chat-composer";
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
 type ChatViewVariant = "default" | "workspace";
+type ChatMode = "rag" | "agent";
+
+type AgentStep = { tool: string; ok: boolean; latencyMs: number };
 
 type LocalSource = {
   source_title?: string;
@@ -28,6 +32,7 @@ type LocalMessage = {
   content: string;
   sources: LocalSource[];
   model?: string | null;
+  steps?: AgentStep[];
   pending?: boolean;
 };
 
@@ -71,6 +76,7 @@ export default function ChatView({
   conversation,
   initialMessages,
   models,
+  defaultAgentModel,
   isAdmin,
   onOpenDrawer,
   variant = "default",
@@ -79,6 +85,7 @@ export default function ChatView({
   conversation: ConversationListItem;
   initialMessages: StoredMessage[];
   models: ModelOption[];
+  defaultAgentModel?: string;
   isAdmin: boolean;
   onOpenDrawer: () => void;
   variant?: ChatViewVariant;
@@ -94,6 +101,12 @@ export default function ChatView({
     (conversation.model as ModelId | null) ??
       models.find((m) => m.available)?.id ??
       "claude",
+  );
+  // Modus + Agent-Modell. Der RAG-Pfad bleibt Default; "agent" fährt den
+  // Tool-Calling-Loop über das provider-agnostische Gateway-Modell.
+  const [mode, setMode] = useState<ChatMode>("rag");
+  const [agentModel, setAgentModel] = useState<string>(
+    defaultAgentModel || DEFAULT_MODEL_STRING,
   );
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +136,26 @@ export default function ChatView({
     setPending(true);
 
     try {
+      if (mode === "agent") {
+        const response = await sendAgentMessage(conversationId, q, agentModel);
+        setMessages((p) =>
+          p.map((m) =>
+            m.id === `${tempId}-a`
+              ? {
+                  ...m,
+                  content: response.text,
+                  sources: response.sources as LocalSource[],
+                  pending: false,
+                  model: response.model,
+                  steps: response.steps,
+                }
+              : m,
+          ),
+        );
+        router.refresh();
+        return;
+      }
+
       const response: ChatResponse = await sendMessage(conversationId, q, selectedModel);
       const text =
         response.type === "answer"
@@ -165,6 +198,54 @@ export default function ChatView({
       setPending(false);
     }
   }
+
+  const modeBar = (
+    <div className="flex items-center gap-2 mb-2 flex-wrap">
+      <div
+        className="inline-flex rounded-full p-0.5"
+        style={{ background: "var(--color-bg-elevated)" }}
+      >
+        {(["rag", "agent"] as const).map((mo) => (
+          <button
+            key={mo}
+            type="button"
+            onClick={() => setMode(mo)}
+            className="px-3 py-1.5 rounded-full text-xs font-medium min-h-[36px]"
+            style={{
+              background: mode === mo ? "var(--color-accent)" : "transparent",
+              color: mode === mo ? "var(--color-accent-text)" : "var(--color-muted)",
+            }}
+          >
+            {mo === "rag" ? "RAG" : "Agent"}
+          </button>
+        ))}
+      </div>
+      {mode === "agent" && (
+        <>
+          <select
+            value={agentModel}
+            onChange={(e) => setAgentModel(e.target.value)}
+            className="text-xs rounded-lg px-2 min-h-[36px]"
+            style={{
+              background: "var(--color-bg-elevated)",
+              color: "var(--color-text)",
+              border: "1px solid var(--color-line-soft)",
+            }}
+            aria-label="Agent-Modell"
+          >
+            {SUPPORTED_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px]" style={styles.muted}>
+            Tool-Loop
+          </span>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -315,6 +396,26 @@ export default function ChatView({
                 >
                   {renderWithCitations(msg.content)}
                 </p>
+                {msg.steps && msg.steps.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px]" style={styles.muted}>
+                      Schritte:
+                    </span>
+                    {msg.steps.map((s, i) => (
+                      <span
+                        key={`${msg.id}-step-${i}`}
+                        className={badge.pill}
+                        style={{
+                          background: "var(--color-bg-elevated)",
+                          color: s.ok ? "var(--color-success)" : "var(--color-danger)",
+                        }}
+                        title={`${s.latencyMs} ms`}
+                      >
+                        {s.ok ? "✓" : "✗"} {s.tool}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {(msg.model || uniqueSources.length > 0) && (
                   <div
                     className="mt-3 pt-3 flex flex-wrap items-center gap-1.5"
@@ -361,6 +462,7 @@ export default function ChatView({
       {/* Input */}
       {isWorkspace ? (
         <div className="shrink-0 px-4 md:px-8 py-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
+          {modeBar}
           <ChatComposer pending={pending} onSubmit={(text) => send(text)} />
         </div>
       ) : (
@@ -371,6 +473,7 @@ export default function ChatView({
             background: "var(--color-panel)",
           }}
         >
+          {modeBar}
           <form
             onSubmit={(e) => {
               e.preventDefault();

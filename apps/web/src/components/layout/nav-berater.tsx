@@ -8,6 +8,7 @@ import {
   IconPlug,
   IconPhone,
   IconBuilding,
+  IconBox,
   NavLink,
   NavGroupBlock,
   type NavGroup,
@@ -36,6 +37,7 @@ export function NavBerater({ hasPhoneAssistant }: { hasPhoneAssistant?: boolean 
       label: "System",
       items: [
         { href: "/admin/integrationen", label: "Datenquellen + Sync", icon: IconPlug },
+        { href: "/admin/agent-tools", label: "Agent-Tools", icon: IconBox },
         { href: "/admin/branding", label: "Branding", icon: IconBuilding },
         ...(hasPhoneAssistant
           ? [{ href: "/telefon-assistent", label: "Telefon", icon: IconPhone }]
