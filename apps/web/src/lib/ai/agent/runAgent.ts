@@ -6,7 +6,14 @@
 // status) via the service client. Logging is best-effort — a missing table
 // (foundation migration not pushed yet) never breaks the answer.
 
-import type { AgentMessage, AgentResult, AgentRunOptions, AgentTool, MemberRole } from "./types";
+import type {
+  AgentMessage,
+  AgentResult,
+  AgentRunOptions,
+  AgentTool,
+  MemberRole,
+  PendingAction,
+} from "./types";
 import { resolveAgentConfig } from "./config";
 import { anthropicAdapter } from "./adapters/anthropic";
 import { openAICompatibleAdapter } from "./adapters/openai-compatible";
@@ -43,6 +50,9 @@ export async function runAgent(params: {
 
   const adapter = cfg.kind === "anthropic" ? anthropicAdapter : openAICompatibleAdapter;
   const startedAt = Date.now();
+  // Shared mutable state with the exec layer — carries the intercepted write
+  // preview (spec §12.2) out of the adapter loop.
+  const runState: { pendingAction?: PendingAction } = {};
   const opts: AgentRunOptions = {
     system:    params.system,
     messages:  params.messages,
@@ -53,12 +63,14 @@ export async function runAgent(params: {
     baseURL:   cfg.baseURL,
     maxRounds: params.maxRounds ?? 5,
     deadline:  startedAt + (params.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+    runState,
   };
 
   const runId = await startRunLog(params, cfg.model);
 
   try {
     const result = await adapter.run(opts);
+    result.runId = runId;
     await finishRunLog(runId, params, cfg.model, startedAt, result, null);
     return result;
   } catch (err) {
@@ -105,16 +117,21 @@ async function finishRunLog(
     try {
       const { createServiceClient } = await import("@/lib/db/supabase-server");
       const db = createServiceClient();
+      // A pending write keeps the run open (no finished_at) until the user
+      // decides in the UI — confirmAgentAction settles it (spec §12.2).
+      const awaiting = Boolean(result?.pendingAction);
       await db
         .from("agent_runs")
         .update({
-          status:      result ? "success" : "failed",
-          finished_at: new Date().toISOString(),
-          duration_ms: durationMs,
+          status: awaiting ? "awaiting_confirmation" : result ? "success" : "failed",
+          ...(awaiting
+            ? { pending_action: result?.pendingAction ?? null }
+            : { finished_at: new Date().toISOString(), duration_ms: durationMs }),
           tool_calls: (result?.steps ?? []).map((s) => ({
             tool:          s.tool,
             input_digest:  digest(s.input),
             result_digest: digest(s.output),
+            // confirmed stays null until the user decided (write tools only).
             confirmed:     null,
           })),
           token_usage:   result ? result.tokenUsage : null,

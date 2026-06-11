@@ -49,7 +49,13 @@ export const openAICompatibleAdapter: AgentAdapter = {
       const toolCalls = choice?.tool_calls ?? [];
 
       if (!choice || toolCalls.length === 0) {
-        return { text: choice?.content ?? "", steps, usedTools, tokenUsage };
+        return {
+          text: choice?.content ?? "",
+          steps,
+          usedTools,
+          tokenUsage,
+          pendingAction: opts.runState?.pendingAction,
+        };
       }
 
       usedTools = true;
@@ -68,6 +74,10 @@ export const openAICompatibleAdapter: AgentAdapter = {
         steps.push({ tool: fn.name, input, output: output.slice(0, 2000) });
         messages.push({ role: "tool", tool_call_id: tc.id, content: output });
       }
+
+      // Write preview pending (spec §12.2): stop tool rounds — the final
+      // no-tools call below turns the preview into the user-facing text.
+      if (opts.runState?.pendingAction) break;
     }
 
     const final = await client.chat.completions.create({
@@ -76,6 +86,12 @@ export const openAICompatibleAdapter: AgentAdapter = {
       messages,
     });
     addUsage(final.usage);
-    return { text: final.choices[0]?.message?.content ?? "", steps, usedTools, tokenUsage };
+    return {
+      text: final.choices[0]?.message?.content ?? "",
+      steps,
+      usedTools,
+      tokenUsage,
+      pendingAction: opts.runState?.pendingAction,
+    };
   },
 };

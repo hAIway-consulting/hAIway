@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendMessage, createConversation } from "../actions";
 import { sendAgentMessage } from "../agent-actions";
+import type { PendingConfirmation } from "../agent-actions";
 import type { ConversationListItem, StoredMessage } from "../actions";
 import type { ChatResponse, ModelId } from "@/lib/ai/chat";
 import type { AgentStep } from "@/lib/ai/agent/types";
@@ -12,6 +13,7 @@ import { card, badge, btn, input, styles } from "@/components/ui/table-classes";
 import RetrievalDebug from "./retrieval-debug";
 import { ChatComposer, ModeToggle } from "./chat-composer";
 import SaveAgentDialog from "./save-agent-dialog";
+import AgentConfirmCard from "./agent-confirm-card";
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
 type ChatViewVariant = "default" | "workspace";
@@ -79,6 +81,7 @@ export default function ChatView({
   onOpenDrawer,
   variant = "default",
   agentAvailable = false,
+  pendingConfirmation = null,
 }: {
   conversationId: string;
   conversation: ConversationListItem;
@@ -89,6 +92,8 @@ export default function ChatView({
   variant?: ChatViewVariant;
   /** agent_mode flag + provider availability (spec-cockpit.md §12.1/§15) */
   agentAvailable?: boolean;
+  /** open write confirmation reconstructed server-side after refresh (spec §12.2) */
+  pendingConfirmation?: PendingConfirmation | null;
 }) {
   const isWorkspace = variant === "workspace";
   const mode = conversation.mode ?? "chat";
@@ -105,6 +110,11 @@ export default function ChatView({
       "claude",
   );
   const [saveAgentOpen, setSaveAgentOpen] = useState(false);
+  // Pending write confirmation (spec §12.2) — from the server page after a
+  // refresh or fresh from the latest sendAgentMessage response.
+  const [confirmation, setConfirmation] = useState<PendingConfirmation | null>(
+    pendingConfirmation,
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Save button only after at least one completed exchange (spec §9) —
@@ -117,14 +127,15 @@ export default function ChatView({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, pending]);
+  }, [messages, pending, confirmation]);
 
   // Reset state when navigating between conversations
   useEffect(() => {
     setMessages(initialMessages.map(toLocal));
     setQuestion("");
     setPending(false);
-  }, [conversationId, initialMessages]);
+    setConfirmation(pendingConfirmation);
+  }, [conversationId, initialMessages, pendingConfirmation]);
 
   // Switching modes starts a NEW conversation (spec §12.4 — no mixed
   // conversations). With no messages yet we still create a fresh one so the
@@ -156,6 +167,7 @@ export default function ChatView({
         const agentResult = await sendAgentMessage(conversationId, q);
         response = agentResult.response;
         steps = agentResult.steps;
+        setConfirmation(agentResult.pendingAction ?? null);
       } else {
         response = await sendMessage(conversationId, q, selectedModel);
       }
@@ -450,6 +462,26 @@ export default function ChatView({
             </div>
           );
         })}
+
+        {/* Write confirmation (spec §12.2) — under the last assistant message */}
+        {isAgent && confirmation && !pending && (
+          <AgentConfirmCard
+            confirmation={confirmation}
+            onResolved={(text) => {
+              setMessages((p) => [
+                ...p,
+                {
+                  id: `confirm-${Date.now()}`,
+                  role: "assistant",
+                  content: text,
+                  sources: [],
+                },
+              ]);
+              setConfirmation(null);
+              router.refresh();
+            }}
+          />
+        )}
       </div>
 
       {/* Input */}
