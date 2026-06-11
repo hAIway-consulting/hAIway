@@ -26,7 +26,7 @@ Supabase Dashboard → Project → **Project Settings** → **Authentication** �
 | Feld | Wert |
 |---|---|
 | Sender email | `noreply@app.haiway-consulting.com` |
-| Sender name | `TimeKeeper` |
+| Sender name | `hAIway consulting` |
 | Host | `smtp.resend.com` |
 | Port | `465` |
 | Minimum interval | `60` (Sekunden — Standard) |
@@ -41,10 +41,10 @@ Für jedes Template in `supabase/templates/auth/` denselben Schritt:
 
 1. Supabase Dashboard → **Authentication** → **Email Templates** → entsprechenden Typ öffnen.
 2. **Subject** setzen (Vorgabe im HTML-Kommentar oben):
-   - Magic Link → `Ihr Anmelde-Link für TimeKeeper`
-   - Invite user → `Sie wurden zu TimeKeeper eingeladen`
-   - Confirm signup → `Bestätigen Sie Ihr TimeKeeper-Konto`
-   - Reset password → `TimeKeeper: Passwort zurücksetzen`
+   - Magic Link → `Ihr Anmelde-Link für hAIway consulting`
+   - Invite user → `Sie wurden zu hAIway consulting eingeladen`
+   - Confirm signup → `Bestätigen Sie Ihr Konto bei hAIway consulting`
+   - Reset password → `hAIway consulting: Passwort zurücksetzen`
 3. **Message (HTML)**: komplett durch den Inhalt der entsprechenden `.html`-Datei ersetzen.
 4. Speichern → **Send Test Email** zur Prüfung.
 

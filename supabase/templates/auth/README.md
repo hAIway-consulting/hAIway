@@ -1,4 +1,4 @@
-# Supabase Auth E-Mail-Templates (TimeKeeper-Branding)
+# Supabase Auth E-Mail-Templates (hAIway-consulting-Branding)
 
 Die HTML-Dateien in diesem Ordner sind **Referenz-Vorlagen** für die Supabase-Auth-E-Mail-Templates. Sie werden **nicht vom Code geladen** — Supabase hält die aktiven Templates im Project-Dashboard vor. Wir versionieren sie hier, damit sie reviewbar und reproduzierbar sind.
 
@@ -46,7 +46,7 @@ Client-State nötig, funktioniert cross-device.
 
 - Table-basiertes Layout (Outlook-kompatibel), max 600px Breite.
 - Farben hart kodiert als Hex (keine CSS-Variablen — Mail-Clients ignorieren sie).
-- TK-Akzentfarbe: `#0d9488` (Teal, light) / `#14b8a6` (teal-500, dark).
+- Akzentfarbe: `#0d9488` (Teal, light) / `#14b8a6` (teal-500, dark).
 - Dark-Mode per `@media (prefers-color-scheme: dark)` — greift in Apple Mail, Gmail iOS/Android, Outlook iOS. Outlook Desktop bleibt im Light-Mode (akzeptabel).
 - Kein externes Bild-Asset — Logo ist Text-Rendered in einer `<div>` mit Teal-Hintergrund.
 - Footer enthält Impressum-Link + Absender-Hinweis.
