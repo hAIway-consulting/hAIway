@@ -1,7 +1,19 @@
 import { cache } from "react";
 import { createUserClient, getUser } from "./supabase-server";
 
-export type MemberRole = "member" | "admin" | "owner";
+export type MemberRole = "member" | "admin" | "owner" | "manager" | "berater";
+
+export const MEMBER_ROLES: MemberRole[] = ["member", "admin", "owner", "manager", "berater"];
+
+/**
+ * Roles that open the Berater persona (Cockpit + Outcome work) in the active
+ * org. 'manager' and 'berater' exist only in the platform org; in customer
+ * orgs the set stays admin/owner.
+ */
+export const BERATER_ROLES: MemberRole[] = ["admin", "owner", "manager", "berater"];
+
+/** Roles that may manage the org itself (Stammdaten, Team, Rollen). */
+export const ORG_MANAGER_ROLES: MemberRole[] = ["admin", "owner"];
 
 /**
  * Returns the active organization ID for the current request.
@@ -72,18 +84,18 @@ export const getMemberRole = cache(async (orgId?: string): Promise<MemberRole | 
     .single();
 
   if (!data) return null;
-  const role = data.role as string;
-  if (role === "member" || role === "admin" || role === "owner") return role;
+  const role = data.role as MemberRole;
+  if (MEMBER_ROLES.includes(role)) return role;
   return null;
 });
 
 /**
- * Throws unless the current user has admin or owner role in the active org.
+ * Throws unless the current user has a Berater-capable role in the active org.
  * Used to gate the Berater-Cockpit (`/admin/*` route group).
  */
 export async function requireBeraterRole(): Promise<MemberRole> {
   const role = await getMemberRole();
-  if (role !== "admin" && role !== "owner") {
+  if (!role || !BERATER_ROLES.includes(role)) {
     throw new Error("Forbidden: berater role required");
   }
   return role;

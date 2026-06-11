@@ -55,16 +55,28 @@ export async function getOrgBranding(): Promise<OrgBranding> {
   };
 }
 
+/**
+ * Platform admin = profiles.is_platform_admin flag OR owner/admin role in the
+ * platform org. Mirrors the SQL function is_platform_admin() so role
+ * assignment in the own org grants the full admin view without touching the
+ * profile flag.
+ */
 export async function isPlatformAdmin(): Promise<boolean> {
   const user = await getUser();
   if (!user) return false;
 
   const db = await createUserClient();
-  const { data } = await db
-    .from("profiles")
-    .select("is_platform_admin")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: platformMembership }] = await Promise.all([
+    db.from("profiles").select("is_platform_admin").eq("id", user.id).single(),
+    db
+      .from("organization_members")
+      .select("role, organizations!inner(is_platform)")
+      .eq("user_id", user.id)
+      .in("role", ["owner", "admin"])
+      .eq("organizations.is_platform", true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  return data?.is_platform_admin === true;
+  return profile?.is_platform_admin === true || platformMembership != null;
 }

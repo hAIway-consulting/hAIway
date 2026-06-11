@@ -2,12 +2,27 @@
 
 import { useRef, useTransition } from "react";
 import { inviteMember } from "../../actions";
+import type { RoleOption } from "@/lib/org-roles";
 
-export function InviteForm({ orgId }: { orgId: string }) {
+const DEFAULT_ROLES: RoleOption[] = [
+  { value: "member", label: "Mitglied" },
+  { value: "owner", label: "Inhaber" },
+];
+
+export function InviteForm({
+  orgId,
+  roles = DEFAULT_ROLES,
+  action,
+}: {
+  orgId: string;
+  roles?: RoleOption[];
+  /** Custom invite action (z. B. org-scoped auf /organisation) — default: Platform-Admin-Action. */
+  action?: (orgId: string, formData: FormData) => Promise<void>;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
 
-  const inviteAction = inviteMember.bind(null, orgId);
+  const inviteAction = (action ?? inviteMember).bind(null, orgId);
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -40,8 +55,11 @@ export function InviteForm({ orgId }: { orgId: string }) {
           color: "var(--color-text)",
         }}
       >
-        <option value="member">Mitglied</option>
-        <option value="owner">Inhaber</option>
+        {roles.map((role) => (
+          <option key={role.value} value={role.value}>
+            {role.label}
+          </option>
+        ))}
       </select>
       <button
         type="submit"

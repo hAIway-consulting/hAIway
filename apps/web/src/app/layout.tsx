@@ -45,6 +45,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   let userName: string | null = null;
   let contextLabel: string | null = null;
   let hasPhoneAssistant = false;
+  let beraterNavVariant: "manager" | "berater" = "manager";
+  let canManageOrg = false;
 
   if (user) {
     try {
@@ -56,11 +58,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       ]);
       branding = b;
       hasPhoneAssistant = phoneFlag;
+      canManageOrg = platformAdmin || role === "admin" || role === "owner";
 
       if (platformAdmin) {
         persona = "haiway";
-      } else if (role === "admin" || role === "owner") {
+      } else if (role === "admin" || role === "owner" || role === "manager" || role === "berater") {
         persona = "berater";
+        // Rolle 'berater' arbeitet im Cockpit, verwaltet aber nicht (System-Gruppe).
+        beraterNavVariant = role === "berater" ? "berater" : "manager";
       } else {
         persona = "workspace";
       }
@@ -84,7 +89,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     persona === "haiway" ? (
       <NavHaiway />
     ) : persona === "berater" ? (
-      <NavBerater hasPhoneAssistant={hasPhoneAssistant} />
+      <NavBerater hasPhoneAssistant={hasPhoneAssistant} variant={beraterNavVariant} />
     ) : (
       <NavWorkspace hasPhoneAssistant={hasPhoneAssistant} />
     );
@@ -106,8 +111,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <WorkspaceShell
               branding={branding}
               userName={userName}
+              userEmail={user.email ?? null}
               contextLabel={contextLabel}
               sidebar={sidebar}
+              orgSettingsHref={canManageOrg ? "/organisation" : null}
             >
               {children}
             </WorkspaceShell>
