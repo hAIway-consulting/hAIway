@@ -542,7 +542,7 @@ async function sendCallNotificationEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "TimeKeeper <noreply@updates.timekeeper.app>",
+        from: "TimeKeeper <noreply@timekeeper.bernwald.net>",
         to: [to],
         subject: `Anruf von ${data.callerNumber} — ${data.autoTags[0] ?? "Neuer Anruf"}`,
         html,
