@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { sendMessage } from "../actions";
+import { sendMessage, createConversation } from "../actions";
+import { sendAgentMessage } from "../agent-actions";
 import type { ConversationListItem, StoredMessage } from "../actions";
 import type { ChatResponse, ModelId } from "@/lib/ai/chat";
+import type { AgentStep } from "@/lib/ai/agent/types";
 import { card, badge, btn, input, styles } from "@/components/ui/table-classes";
 import RetrievalDebug from "./retrieval-debug";
-import { ChatComposer } from "./chat-composer";
+import { ChatComposer, ModeToggle } from "./chat-composer";
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
 type ChatViewVariant = "default" | "workspace";
@@ -29,6 +31,7 @@ type LocalMessage = {
   sources: LocalSource[];
   model?: string | null;
   pending?: boolean;
+  steps?: AgentStep[];
 };
 
 function toLocal(m: StoredMessage): LocalMessage {
@@ -74,6 +77,7 @@ export default function ChatView({
   isAdmin,
   onOpenDrawer,
   variant = "default",
+  agentAvailable = false,
 }: {
   conversationId: string;
   conversation: ConversationListItem;
@@ -82,8 +86,12 @@ export default function ChatView({
   isAdmin: boolean;
   onOpenDrawer: () => void;
   variant?: ChatViewVariant;
+  /** agent_mode flag + provider availability (spec-cockpit.md §12.1/§15) */
+  agentAvailable?: boolean;
 }) {
   const isWorkspace = variant === "workspace";
+  const mode = conversation.mode ?? "chat";
+  const isAgent = mode === "agent";
   const router = useRouter();
   const [messages, setMessages] = useState<LocalMessage[]>(
     initialMessages.map(toLocal),
@@ -111,6 +119,18 @@ export default function ChatView({
     setPending(false);
   }, [conversationId, initialMessages]);
 
+  // Switching modes starts a NEW conversation (spec §12.4 — no mixed
+  // conversations). With no messages yet we still create a fresh one so the
+  // mode column is set correctly from the start.
+  function switchMode(next: "chat" | "agent") {
+    if (next === mode || pending) return;
+    void (async () => {
+      const id = await createConversation(next);
+      router.push(`/chat/${id}`);
+      router.refresh();
+    })();
+  }
+
   async function send(q: string) {
     if (!q || pending) return;
 
@@ -123,7 +143,15 @@ export default function ChatView({
     setPending(true);
 
     try {
-      const response: ChatResponse = await sendMessage(conversationId, q, selectedModel);
+      let response: ChatResponse;
+      let steps: AgentStep[] = [];
+      if (isAgent) {
+        const agentResult = await sendAgentMessage(conversationId, q);
+        response = agentResult.response;
+        steps = agentResult.steps;
+      } else {
+        response = await sendMessage(conversationId, q, selectedModel);
+      }
       const text =
         response.type === "answer"
           ? response.text
@@ -144,6 +172,7 @@ export default function ChatView({
                 sources,
                 pending: false,
                 model: response.type === "answer" ? response.model : undefined,
+                steps: steps.length > 0 ? steps : undefined,
               }
             : m,
         ),
@@ -188,6 +217,11 @@ export default function ChatView({
           >
             {conversation.title}
           </h1>
+          {isAgent && (
+            <span className={badge.pill} style={styles.accentSoft}>
+              Agent
+            </span>
+          )}
         </div>
       ) : (
         <div
@@ -207,13 +241,18 @@ export default function ChatView({
             <span className="block w-5 h-0.5 bg-current relative before:absolute before:-top-1.5 before:left-0 before:right-0 before:h-0.5 before:bg-current after:absolute after:top-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-current" />
           </button>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center gap-2">
             <h1
               className="text-base md:text-lg font-semibold truncate"
               style={styles.title}
             >
               {conversation.title}
             </h1>
+            {isAgent && (
+              <span className={badge.pill} style={styles.accentSoft}>
+                Agent
+              </span>
+            )}
           </div>
 
           {models.length > 0 && (
@@ -264,12 +303,19 @@ export default function ChatView({
               className="text-base font-medium"
               style={{ color: "var(--color-text)" }}
             >
-              Stell eine Frage
+              {isAgent ? "Gib dem Agenten einen Auftrag" : "Stell eine Frage"}
             </p>
             <p className="text-sm max-w-sm" style={styles.muted}>
-              Antworten kommen ausschliesslich aus deinen Quellen — mit Hybrid-Suche
-              (Volltext + Semantik) und Quellenangaben.
+              {isAgent
+                ? "Der Agent nutzt Werkzeuge auf euren Daten — z. B. Automatisierungs-Status, Reklamationen oder Trello."
+                : "Antworten kommen ausschliesslich aus deinen Quellen — mit Hybrid-Suche (Volltext + Semantik) und Quellenangaben."}
             </p>
+            {!isAgent && agentAvailable && (
+              <p className="text-xs max-w-sm" style={styles.muted}>
+                Für Aktionen und Echtzeit-Daten (Automatisierungen, Tickets): unten auf
+                {" "}„Agent&ldquo; umschalten.
+              </p>
+            )}
           </div>
         )}
 
@@ -296,7 +342,7 @@ export default function ChatView({
                   <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--color-accent)", animationDelay: "300ms" }} />
                 </div>
                 <span className="text-xs" style={styles.muted}>
-                  Suche und Antwort laufen …
+                  {isAgent ? "Agent arbeitet — Werkzeuge laufen …" : "Suche und Antwort laufen …"}
                 </span>
               </div>
             );
@@ -350,6 +396,27 @@ export default function ChatView({
                   </div>
                 )}
               </div>
+              {msg.steps && msg.steps.length > 0 && (
+                <details className="mt-1.5">
+                  <summary
+                    className="text-[11px] cursor-pointer select-none min-h-[28px] inline-flex items-center"
+                    style={styles.muted}
+                  >
+                    {msg.steps.length} {msg.steps.length === 1 ? "Schritt" : "Schritte"} anzeigen
+                  </summary>
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {msg.steps.map((s, i) => (
+                      <li
+                        key={`${msg.id}-step-${i}`}
+                        className="text-[11px] px-2.5 py-1.5 rounded-lg font-mono"
+                        style={{ background: "var(--color-bg-elevated)", color: "var(--color-muted)" }}
+                      >
+                        {i + 1}. {s.tool}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               {isAdmin && msg.sources.length > 0 && (
                 <RetrievalDebug sources={msg.sources} />
               )}
@@ -361,7 +428,15 @@ export default function ChatView({
       {/* Input */}
       {isWorkspace ? (
         <div className="shrink-0 px-4 md:px-8 py-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
-          <ChatComposer pending={pending} onSubmit={(text) => send(text)} />
+          <ChatComposer
+            pending={pending}
+            onSubmit={(text) => send(text)}
+            mode={mode}
+            modeLocked={messages.length > 0}
+            agentAvailable={agentAvailable}
+            onModeSelect={switchMode}
+            placeholder={isAgent ? "Auftrag an den Agenten — Enter zum Senden" : undefined}
+          />
         </div>
       ) : (
         <div
@@ -379,8 +454,16 @@ export default function ChatView({
               setQuestion("");
               void send(q);
             }}
-            className="flex gap-2"
+            className="flex gap-2 items-center"
           >
+            {agentAvailable && (
+              <ModeToggle
+                mode={mode}
+                locked={messages.length > 0}
+                disabled={pending}
+                onSelect={switchMode}
+              />
+            )}
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}

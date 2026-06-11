@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { getConversation, listConversations, listMyConversations, getAvailableModels } from "../actions";
 import { isPlatformAdmin } from "@/lib/db/queries/organization";
-import { getMemberRole } from "@/lib/db/org-context";
+import { getMemberRole, requireOrgId } from "@/lib/db/org-context";
+import { hasFeature } from "@/lib/features/flags";
+import { resolveAgentConfig } from "@/lib/ai/agent/config";
 import ChatLayout from "../_components/chat-layout";
 
 export default async function ChatConversationPage({
@@ -20,13 +22,19 @@ export default async function ChatConversationPage({
   ]);
   const isWorkspace = !admin && role !== "admin" && role !== "owner";
 
-  const [data, conversations, models] = await Promise.all([
+  // Agent mode is offered only when the feature flag is on AND a provider
+  // is actually configured — explicit availability, no silent fallback
+  // (spec-cockpit.md §12.1/§15).
+  const [data, conversations, models, agentFlag, agentCfg] = await Promise.all([
     getConversation(id),
     isWorkspace ? listMyConversations(50) : listConversations(50),
     getAvailableModels(),
+    hasFeature("agent_mode").catch(() => false),
+    requireOrgId().then((orgId) => resolveAgentConfig(orgId)).catch(() => ({ available: false })),
   ]);
 
   if (!data) notFound();
+  const agentAvailable = agentFlag && agentCfg.available;
 
   return (
     <ChatLayout
@@ -37,6 +45,7 @@ export default async function ChatConversationPage({
       models={models}
       isAdmin={admin}
       variant={isWorkspace ? "workspace" : "default"}
+      agentAvailable={agentAvailable}
     />
   );
 }

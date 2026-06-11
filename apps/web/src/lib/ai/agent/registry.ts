@@ -20,6 +20,21 @@ import type { AgentTool } from "./types";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DAYS_PER_MONTH = 30;
 
+// Tools with write side effects — not available to `member` callers
+// (Rollen-Matrix spec-cockpit.md §11). The full access/minRole metadata
+// model lands with the write-confirmation flow; until then this set is
+// the single source of truth for role filtering.
+export const WRITE_TOOLS = new Set(["cleanup_stale_trello_cards"]);
+
+/** Tools a caller with the given role may use (member → read-only). */
+export function filterToolsForRole(
+  tools: AgentTool[],
+  role: "member" | "admin" | "owner" | undefined,
+): AgentTool[] {
+  if (role === "admin" || role === "owner") return tools;
+  return tools.filter((t) => !WRITE_TOOLS.has(t.name));
+}
+
 export const AGENT_TOOLS: AgentTool[] = [
   {
     name: "get_automation_overview",

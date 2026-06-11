@@ -35,7 +35,24 @@ export type ConversationListItem = {
   title: string;
   last_message_at: string;
   model: string | null;
+  /** 'chat' | 'agent' — explicit per-conversation mode (spec-cockpit.md §12.4) */
+  mode: ConversationMode;
 };
+
+export type ConversationMode = "chat" | "agent";
+
+// The `mode` column ships with the cockpit foundation migration. Until it is
+// pushed, selects/inserts including it fail with 42703/PGRST204 — these
+// helpers degrade to mode='chat' so previews stay testable. Remove with the
+// post-push cleanup.
+function isMissingModeColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    (error.message ?? "").includes("mode")
+  );
+}
 
 export type StoredMessage = {
   id: string;
@@ -128,20 +145,30 @@ function tagChunks(
 
 // ── Conversations ────────────────────────────────────────────────────────
 
-export async function createConversation(): Promise<string> {
+export async function createConversation(mode: ConversationMode = "chat"): Promise<string> {
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { data: { user } } = await db.auth.getUser();
 
-  const { data, error } = await db
+  const baseRow = {
+    organization_id: orgId,
+    created_by: user?.id ?? null,
+    title: mode === "agent" ? "Neuer Agent" : "Neuer Chat",
+  };
+
+  let { data, error } = await db
     .from("chat_conversations")
-    .insert({
-      organization_id: orgId,
-      created_by: user?.id ?? null,
-      title: "Neuer Chat",
-    })
+    .insert({ ...baseRow, mode })
     .select("id")
     .single();
+
+  if (error && isMissingModeColumn(error)) {
+    ({ data, error } = await db
+      .from("chat_conversations")
+      .insert(baseRow)
+      .select("id")
+      .single());
+  }
 
   if (error) throw error;
   revalidatePath("/chat", "layout");
@@ -151,15 +178,30 @@ export async function createConversation(): Promise<string> {
 export async function listConversations(limit = 50): Promise<ConversationListItem[]> {
   const orgId = await requireOrgId();
   const db = await createUserClient();
-  const { data, error } = await db
+  let { data, error } = await db
     .from("chat_conversations")
-    .select("id, title, last_message_at, model")
+    .select("id, title, last_message_at, model, mode")
     .eq("organization_id", orgId)
     .is("archived_at", null)
     .order("last_message_at", { ascending: false })
     .limit(limit);
+  if (error && isMissingModeColumn(error)) {
+    const fb = await db
+      .from("chat_conversations")
+      .select("id, title, last_message_at, model")
+      .eq("organization_id", orgId)
+      .is("archived_at", null)
+      .order("last_message_at", { ascending: false })
+      .limit(limit);
+    data = fb.data as typeof data;
+    error = fb.error;
+  }
   if (error) throw error;
-  return (data ?? []) as ConversationListItem[];
+  return withDefaultMode(data ?? []);
+}
+
+function withDefaultMode(rows: Record<string, unknown>[]): ConversationListItem[] {
+  return rows.map((r) => ({ ...r, mode: (r.mode as ConversationMode) ?? "chat" })) as ConversationListItem[];
 }
 
 /**
@@ -173,16 +215,28 @@ export async function listMyConversations(limit = 50): Promise<ConversationListI
   const db = await createUserClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return [];
-  const { data, error } = await db
+  let { data, error } = await db
     .from("chat_conversations")
-    .select("id, title, last_message_at, model")
+    .select("id, title, last_message_at, model, mode")
     .eq("organization_id", orgId)
     .eq("created_by", user.id)
     .is("archived_at", null)
     .order("last_message_at", { ascending: false })
     .limit(limit);
+  if (error && isMissingModeColumn(error)) {
+    const fb = await db
+      .from("chat_conversations")
+      .select("id, title, last_message_at, model")
+      .eq("organization_id", orgId)
+      .eq("created_by", user.id)
+      .is("archived_at", null)
+      .order("last_message_at", { ascending: false })
+      .limit(limit);
+    data = fb.data as typeof data;
+    error = fb.error;
+  }
   if (error) throw error;
-  return (data ?? []) as ConversationListItem[];
+  return withDefaultMode(data ?? []);
 }
 
 export async function getConversation(id: string): Promise<{
@@ -192,12 +246,22 @@ export async function getConversation(id: string): Promise<{
   const orgId = await requireOrgId();
   const db = await createUserClient();
 
-  const { data: conv, error: convErr } = await db
+  let { data: conv, error: convErr } = await db
     .from("chat_conversations")
-    .select("id, title, last_message_at, model")
+    .select("id, title, last_message_at, model, mode")
     .eq("id", id)
     .eq("organization_id", orgId)
     .single();
+  if (convErr && isMissingModeColumn(convErr)) {
+    const fb = await db
+      .from("chat_conversations")
+      .select("id, title, last_message_at, model")
+      .eq("id", id)
+      .eq("organization_id", orgId)
+      .single();
+    conv = fb.data as typeof conv;
+    convErr = fb.error;
+  }
   if (convErr || !conv) return null;
 
   const { data: msgs, error: msgErr } = await db
@@ -208,7 +272,7 @@ export async function getConversation(id: string): Promise<{
   if (msgErr) throw msgErr;
 
   return {
-    conversation: conv as ConversationListItem,
+    conversation: withDefaultMode([conv])[0],
     messages: (msgs ?? []) as StoredMessage[],
   };
 }
@@ -268,6 +332,19 @@ export async function sendMessage(
   }
 
   const usageCtx = { orgId, userId };
+
+  // Explicit modes (spec §12.1): the chat path never runs on agent
+  // conversations — the composer routes those to sendAgentMessage.
+  {
+    const { data: conv } = await db
+      .from("chat_conversations")
+      .select("mode")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if ((conv as { mode?: string } | null)?.mode === "agent") {
+      throw new Error("Diese Konversation läuft im Agenten-Modus — bitte den Agent-Pfad nutzen.");
+    }
+  }
 
   // 1. Load history
   const { data: historyRows } = await db

@@ -5,9 +5,13 @@
 // latter covers OpenAI cloud AND locally-hosted models via base_url —
 // Ollama, vLLM, LM Studio, llama.cpp). New providers = new adapter only.
 
+export type MemberRole = "member" | "admin" | "owner";
+
 export interface AgentContext {
   orgId:   string;
   userId?: string;
+  /** caller's org role — drives tool filtering (spec-cockpit.md §11/§12.2) */
+  role?:   MemberRole;
 }
 
 export interface AgentTool {
@@ -51,6 +55,8 @@ export interface AgentRunOptions {
   apiKey?:   string;
   baseURL?:  string;
   maxRounds?: number;
+  /** epoch ms — adapters break to the final no-tools call once reached (spec §12.3) */
+  deadline?: number;
 }
 
 export interface AgentAdapter {

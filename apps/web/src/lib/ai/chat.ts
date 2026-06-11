@@ -15,10 +15,6 @@ import type { ChunkSearchResult } from "@/lib/db/queries/search";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { getOpenAIKeyForChat } from "./embeddings";
-import { runAgent } from "./agent/runAgent";
-import { resolveAgentConfig } from "./agent/config";
-import { AGENT_TOOLS } from "./agent/registry";
-import type { AgentMessage } from "./agent/types";
 
 export type ModelId = "claude" | "gpt-4o" | "gpt-4o-mini";
 
@@ -403,56 +399,6 @@ async function callOpenAI(
 }
 
 /**
- * Run the configured agentic model with the tool registry. Returns null when
- * no agent provider is available or it produced no text, so the caller can
- * fall back to the pure-RAG path.
- */
-async function tryAgentAnswer(p: {
-  history: ChatTurn[];
-  question: string;
-  chunks: ChunkSearchResult[];
-  entityContext?: string;
-  rewrittenQuery?: string;
-  orgId: string;
-  userId?: string;
-}): Promise<ChatResponse | null> {
-  try {
-    const cfg = await resolveAgentConfig(p.orgId);
-    if (!cfg.available) return null;
-
-    const systemPrompt = await buildSystemPrompt(p.entityContext, true);
-    const contextBlock = p.chunks.length ? buildContextBlock(p.chunks) : "(keine Dokument-Treffer)";
-    const messages: AgentMessage[] = [
-      ...p.history.map((h) => ({ role: h.role, content: h.content })),
-      { role: "user", content: `Dokument-Quellen:\n\n${contextBlock}\n\n---\n\nFrage: ${p.question}` },
-    ];
-
-    const result = await runAgent({
-      orgId:    p.orgId,
-      userId:   p.userId,
-      system:   systemPrompt,
-      messages,
-      tools:    AGENT_TOOLS,
-    });
-    if (!result || !result.text.trim()) return null;
-
-    const modelId: ModelId = cfg.kind === "anthropic" ? "claude" : "gpt-4o";
-    return {
-      type:           "answer",
-      text:           result.text,
-      sources:        p.chunks,
-      model:          modelId,
-      rewrittenQuery: p.rewrittenQuery,
-      entityContext:  p.entityContext,
-      tokenUsage:     result.tokenUsage,
-      modelUsed:      cfg.model,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Generate an answer with hallucination guard.
  *
  * - history: previous turns from the conversation (excluding the current user question)
@@ -469,20 +415,8 @@ export async function generateAnswer(params: {
   orgId?: string;
   userId?: string;
 }): Promise<ChatResponse> {
-  const { history, question, chunks, entityContext, rewrittenQuery, orgId, userId } = params;
+  const { history, question, chunks, entityContext, rewrittenQuery } = params;
   const model: ModelId = params.model ?? "claude";
-
-  // Agent (tool-calling) path: answers structured/integration/Trello questions
-  // via tools while still passing the retrieved chunks as document context.
-  // The provider is the org/env-configured agentic model (Anthropic or any
-  // OpenAI-compatible endpoint, incl. locally hosted). Falls back to pure RAG
-  // when no agent provider is available or the agent yields nothing.
-  if (orgId) {
-    const agent = await tryAgentAnswer({
-      history, question, chunks, entityContext, rewrittenQuery, orgId, userId,
-    });
-    if (agent) return agent;
-  }
 
   // Hallucination guard: with no chunks, return a deterministic refusal
   // wrapped as an answer (not "chunks") so the UI shows it inline.
