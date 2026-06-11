@@ -219,6 +219,15 @@ export default function ChatView({
       {/* Header */}
       {isWorkspace ? (
         <div className="shrink-0 px-4 md:px-8 pt-6 pb-4 flex items-center gap-3 max-w-3xl mx-auto w-full">
+          <button
+            type="button"
+            onClick={onOpenDrawer}
+            className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg shrink-0"
+            style={{ color: "var(--color-text)" }}
+            aria-label="Verlauf anzeigen"
+          >
+            <span className="block w-5 h-0.5 bg-current relative before:absolute before:-top-1.5 before:left-0 before:right-0 before:h-0.5 before:bg-current after:absolute after:top-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-current" />
+          </button>
           <Link
             href="/"
             className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg shrink-0"

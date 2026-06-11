@@ -53,7 +53,7 @@ export async function WorkspaceHome() {
   const first = firstName(fullName);
 
   const [conversations, sourceCount] = await Promise.all([
-    listMyConversations(5).catch(() => []),
+    listMyConversations(1).catch(() => []),
     countReadySources().catch(() => 0),
   ]);
 
@@ -178,71 +178,19 @@ export async function WorkspaceHome() {
         </div>
       </section>
 
-      {/* ── Letzte Chats ── */}
-      <section className="w-full max-w-5xl mt-10">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-            Cockpit-Verlauf
-          </h2>
-          {conversations.length > 0 && (
-            <Link href="/chat" className="text-[12px] font-medium" style={{ color: "var(--color-accent)" }}>
-              Alle öffnen →
-            </Link>
-          )}
-        </div>
-        {conversations.length === 0 ? (
-          <div
-            className="rounded-2xl p-6 text-center"
-            style={{
-              background: "var(--color-panel)",
-              border: "1px dashed var(--color-line)",
-              color: "var(--color-muted)",
-            }}
-          >
-            Noch keine Konversation — stell deine erste Frage oben.
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {conversations.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/chat/${c.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl min-h-[52px] transition-all hover:shadow-sm"
-                  style={{
-                    background: "var(--color-panel)",
-                    border: "1px solid var(--color-line)",
-                  }}
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <span
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
-                      aria-hidden
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
-                      </svg>
-                    </span>
-                    <span className="text-[14px] font-medium truncate" style={{ color: "var(--color-text)" }}>
-                      {c.title || "Neuer Chat"}
-                    </span>
-                    {c.mode === "agent" && (
-                      <span
-                        className="shrink-0 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
-                      >
-                        Agent
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[11px] shrink-0" style={{ color: "var(--color-placeholder)" }}>
-                    {relativeTime(c.last_message_at)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Verlauf lebt im Cockpit (spec §2) — hier nur der Einstieg. */}
+      <section className="w-full max-w-5xl mt-10 flex justify-center">
+        <Link
+          href="/chat"
+          className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-full text-[13px] font-medium transition-all hover:shadow-sm"
+          style={{
+            background: "var(--color-panel)",
+            border: "1px solid var(--color-line)",
+            color: "var(--color-accent)",
+          }}
+        >
+          Cockpit-Verlauf öffnen →
+        </Link>
       </section>
     </div>
   );

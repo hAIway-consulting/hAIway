@@ -14,9 +14,9 @@ export default async function ChatConversationPage({
 }) {
   const { id } = await params;
 
-  // Workspace-Persona (End-User) bekommt den minimalen Chat-Look ohne Sidebar
-  // — die "Letzte Chats"-Liste lebt schon auf der Home. Berater + HAIway
-  // sehen weiterhin die volle Sidebar-Variante mit Audit-Sicht.
+  // Beide Personas sehen die Verlaufs-Sidebar mit Modus-Reitern (spec §2 —
+  // der Verlauf lebt im Cockpit). Workspace = eigene Konversationen,
+  // Berater + HAIway = volle Audit-Sicht der Org.
   const [admin, role] = await Promise.all([
     isPlatformAdmin().catch(() => false),
     getMemberRole().catch(() => null),
