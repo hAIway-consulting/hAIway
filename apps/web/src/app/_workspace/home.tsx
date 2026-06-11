@@ -4,6 +4,7 @@ import { countReadySources } from "@/lib/db/queries/sources";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { listAutomations, type Automation } from "@/lib/db/queries/workflows";
+import { formatMinutesSaved, formatPerRunMinutes } from "@/lib/format-minutes";
 import { HeroAsk } from "./hero-ask";
 import { AgentTile } from "./agent-tile";
 import { STUB_AGENTS, type WorkspaceAgent } from "./agents";
@@ -291,6 +292,8 @@ function StatCard({
 function AutomationCard({ a }: { a: Automation }) {
   const rate = a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null;
   const handlungsbedarf = a.kpi.failed > 0;
+  // KPI v1 (spec-cockpit.md §10): saved time = per-run value × successful runs
+  const minutesSaved = a.minutesSavedPerRun * a.kpi.success;
   return (
     <Link
       href="/automatisierungen"
@@ -321,6 +324,12 @@ function AutomationCard({ a }: { a: Automation }) {
         <AutoStat label="Erfolg" value={rate == null ? "—" : `${rate}%`} tone="success" />
         <AutoStat label="Fehler" value={String(a.kpi.failed)} tone={handlungsbedarf ? "danger" : "default"} />
       </div>
+      {a.minutesSavedPerRun > 0 && (
+        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-success)" }}>
+          spart ~{formatPerRunMinutes(a.minutesSavedPerRun)} Min pro Lauf
+          {minutesSaved > 0 && <> · {formatMinutesSaved(minutesSaved)} gesamt</>}
+        </p>
+      )}
       {handlungsbedarf && (
         <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-danger)" }}>
           ⚠ {a.kpi.failed} {a.kpi.failed === 1 ? "Fall benötigt" : "Fälle benötigen"} Aufmerksamkeit.
