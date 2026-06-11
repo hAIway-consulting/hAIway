@@ -5,7 +5,7 @@
 // the provider-agnostic agent loop with limits + audit (agent_runs).
 
 import { revalidatePath } from "next/cache";
-import { createUserClient } from "@/lib/db/supabase-server";
+import { createUserClient, createServiceClient } from "@/lib/db/supabase-server";
 import { requireOrgId, getMemberRole } from "@/lib/db/org-context";
 import { hybridSearch } from "@/lib/db/queries/search";
 import {
@@ -18,8 +18,8 @@ import {
 } from "@/lib/ai/chat";
 import { runAgent } from "@/lib/ai/agent/runAgent";
 import { resolveAgentConfig } from "@/lib/ai/agent/config";
-import { AGENT_TOOLS } from "@/lib/ai/agent/registry";
-import type { AgentMessage, AgentStep, MemberRole } from "@/lib/ai/agent/types";
+import { AGENT_TOOLS, filterToolsForRole, roleSatisfies } from "@/lib/ai/agent/registry";
+import type { AgentMessage, AgentStep, MemberRole, PendingAction } from "@/lib/ai/agent/types";
 import { checkAiQuota } from "@/lib/ai/quota";
 
 const AGENT_MAX_ROUNDS = 8;     // spec §12.3
@@ -27,9 +27,18 @@ const AGENT_TIMEOUT_MS = 60_000; // spec §12.3
 const RETRIEVAL_LIMIT = 8;       // light doc context — tools cover structured data
 const HISTORY_WINDOW = 10;
 
+/** Write action awaiting UI confirmation — what the client needs to render the card. */
+export interface PendingConfirmation {
+  runId:   string;
+  tool:    string;
+  preview: string;
+}
+
 export interface AgentChatResponse {
   response: ChatResponse;
   steps: AgentStep[];
+  /** set when a write tool produced a preview — the UI must confirm/cancel (spec §12.2) */
+  pendingAction?: PendingConfirmation;
 }
 
 export async function sendAgentMessage(
@@ -117,6 +126,7 @@ export async function sendAgentMessage(
 
   let text: string;
   let steps: AgentStep[] = [];
+  let pendingAction: PendingConfirmation | undefined;
   try {
     const result = await runAgent({
       orgId,
@@ -134,6 +144,15 @@ export async function sendAgentMessage(
     text = result.text.trim() ||
       "Der Agent hat keine Antwort erzeugt. Bitte formuliere die Anfrage konkreter.";
     steps = result.steps;
+    // Without a persisted run row there is nothing to confirm against — the
+    // preview text still shows, but no card (defensive, e.g. table missing).
+    if (result.pendingAction && result.runId) {
+      pendingAction = {
+        runId:   result.runId,
+        tool:    result.pendingAction.tool,
+        preview: result.pendingAction.preview,
+      };
+    }
   } catch {
     text =
       "Der Agent konnte die Anfrage nicht abschließen. Bitte versuche es erneut — " +
@@ -170,7 +189,275 @@ export async function sendAgentMessage(
   }
 
   revalidatePath("/chat", "layout");
-  return { response, steps };
+  return { response, steps, pendingAction };
+}
+
+// ── Write confirmation (spec-cockpit.md §12.2) ───────────────────────────
+
+const RESULT_TRUNCATE = 2000;
+const CONFIRM_SUMMARY_TIMEOUT_MS = 30_000;
+
+function digest(value: unknown, max = 300): string {
+  try {
+    return JSON.stringify(value).slice(0, max);
+  } catch {
+    return String(value).slice(0, max);
+  }
+}
+
+export interface ConfirmActionResult {
+  ok: boolean;
+  /** assistant-style text for the chat (success summary or German error) */
+  text: string;
+}
+
+type AgentRunRow = {
+  id: string;
+  organization_id: string;
+  conversation_id: string | null;
+  triggered_by: string | null;
+  status: string;
+  started_at: string;
+  tool_calls: unknown;
+  pending_action: PendingAction | null;
+};
+
+/**
+ * Settle a pending write action (spec §12.2). The persisted input is executed
+ * verbatim with confirm=true — the model is NOT involved in the execution and
+ * cannot re-issue or alter the action. Idempotent: any state other than
+ * awaiting_confirmation returns a German notice instead of throwing.
+ */
+export async function confirmAgentAction(
+  runId: string,
+  approve: boolean,
+): Promise<ConfirmActionResult> {
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return { ok: false, text: "Nicht angemeldet." };
+
+  // Load via USER client — RLS guarantees org membership.
+  let run: AgentRunRow | null = null;
+  try {
+    const { data } = await db
+      .from("agent_runs")
+      .select("id, organization_id, conversation_id, triggered_by, status, started_at, tool_calls, pending_action")
+      .eq("id", runId)
+      .maybeSingle();
+    run = (data as AgentRunRow | null) ?? null;
+  } catch {
+    run = null;
+  }
+
+  if (!run || run.organization_id !== orgId || !run.pending_action) {
+    return { ok: false, text: "Diese Aktion ist nicht mehr offen — sie wurde bereits verarbeitet oder ist nicht verfügbar." };
+  }
+  if (run.triggered_by !== user.id) {
+    return { ok: false, text: "Nur wer die Aktion ausgelöst hat, kann sie bestätigen oder abbrechen." };
+  }
+  if (run.status !== "awaiting_confirmation") {
+    return { ok: false, text: "Diese Aktion wurde bereits bestätigt oder abgebrochen." };
+  }
+
+  const pending = run.pending_action;
+  const tool = AGENT_TOOLS.find((t) => t.name === pending.tool);
+  if (!tool) {
+    return { ok: false, text: "Das Werkzeug dieser Aktion ist nicht mehr verfügbar." };
+  }
+
+  // Re-check permissions at decision time (role may have changed since the
+  // preview): write tools are never available to members + minRole applies.
+  const role = ((await getMemberRole().catch(() => null)) ?? "member") as MemberRole;
+  if ((tool.access === "write" && role === "member") || !roleSatisfies(role, tool.minRole)) {
+    return { ok: false, text: "Dir fehlt die Berechtigung, diese Aktion auszuführen." };
+  }
+
+  const startedAtMs = new Date(run.started_at).getTime();
+  const priorCalls = Array.isArray(run.tool_calls) ? (run.tool_calls as unknown[]) : [];
+  const service = createServiceClient();
+
+  // Atomically claim the pending action (status -> running). Guarantees a
+  // double-submit or parallel tab can never execute the write twice — only
+  // one caller wins the compare-and-set.
+  try {
+    const { data: claimed } = await service
+      .from("agent_runs")
+      .update({ status: "running" })
+      .eq("id", run.id)
+      .eq("status", "awaiting_confirmation")
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      return { ok: false, text: "Diese Aktion wurde bereits bestätigt oder abgebrochen." };
+    }
+  } catch {
+    return { ok: false, text: "Die Aktion konnte gerade nicht verarbeitet werden. Bitte versuche es erneut." };
+  }
+
+  async function persistAssistantMessage(text: string): Promise<void> {
+    if (!run?.conversation_id) return;
+    await db
+      .from("chat_messages")
+      .insert({
+        conversation_id: run.conversation_id,
+        organization_id: orgId,
+        role: "assistant",
+        content: text,
+      })
+      .throwOnError();
+  }
+
+  // ── Cancel ──────────────────────────────────────────────────────────────
+  if (!approve) {
+    const text = "Aktion abgebrochen — es wurde nichts verändert.";
+    try {
+      await service
+        .from("agent_runs")
+        .update({
+          status:         "cancelled",
+          pending_action: null,
+          finished_at:    new Date().toISOString(),
+          duration_ms:    Number.isFinite(startedAtMs) ? Date.now() - startedAtMs : null,
+          tool_calls:     [...priorCalls, { tool: pending.tool, input_digest: digest(pending.input), confirmed: false }],
+        })
+        .eq("id", run.id);
+    } catch {
+      /* best effort */
+    }
+    try {
+      await persistAssistantMessage(text);
+    } catch {
+      /* message persistence is best effort */
+    }
+    revalidatePath("/chat", "layout");
+    return { ok: true, text };
+  }
+
+  // ── Approve: execute the PERSISTED input directly — no model involved. ──
+  let result: unknown;
+  try {
+    result = await tool.handler(
+      { ...pending.input, confirm: true },
+      { orgId, userId: user.id, role },
+    );
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    try {
+      await service
+        .from("agent_runs")
+        .update({
+          status:         "failed",
+          pending_action: null,
+          finished_at:    new Date().toISOString(),
+          duration_ms:    Number.isFinite(startedAtMs) ? Date.now() - startedAtMs : null,
+          tool_calls:     [...priorCalls, { tool: pending.tool, input_digest: digest(pending.input), confirmed: true }],
+          error_message:  reason,
+        })
+        .eq("id", run.id);
+    } catch {
+      /* best effort */
+    }
+    const text = "Die Aktion konnte nicht ausgeführt werden. Bitte versuche es erneut — bei wiederholten Fehlern hilft euer Berater weiter.";
+    try {
+      await persistAssistantMessage(text);
+    } catch {
+      /* best effort */
+    }
+    revalidatePath("/chat", "layout");
+    return { ok: false, text };
+  }
+
+  const resultJson = digest(result, RESULT_TRUNCATE);
+
+  // ONE summarization round — read-only tools only, so the model cannot
+  // trigger another write while phrasing the outcome.
+  let summary = "Die Aktion wurde ausgeführt.";
+  try {
+    const systemPrompt = await buildSystemPrompt(undefined, true);
+    const summaryResult = await runAgent({
+      orgId,
+      userId: user.id,
+      role,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Die Aktion wurde vom Nutzer bestätigt und ausgeführt. " +
+            `Ergebnis: ${resultJson}. Fasse das Ergebnis kurz für den Nutzer zusammen.`,
+        },
+      ],
+      tools: filterToolsForRole(AGENT_TOOLS, "member"),
+      maxRounds: 1,
+      timeoutMs: CONFIRM_SUMMARY_TIMEOUT_MS,
+      conversationId: run.conversation_id ?? undefined,
+    });
+    if (summaryResult?.text.trim()) summary = summaryResult.text.trim();
+  } catch {
+    /* fall back to the generic confirmation text */
+  }
+
+  try {
+    await persistAssistantMessage(summary);
+  } catch {
+    /* best effort */
+  }
+
+  try {
+    await service
+      .from("agent_runs")
+      .update({
+        status:         "success",
+        pending_action: null,
+        finished_at:    new Date().toISOString(),
+        duration_ms:    Number.isFinite(startedAtMs) ? Date.now() - startedAtMs : null,
+        tool_calls: [
+          ...priorCalls,
+          {
+            tool:          pending.tool,
+            input_digest:  digest(pending.input),
+            result_digest: digest(result),
+            confirmed:     true,
+          },
+        ],
+      })
+      .eq("id", run.id);
+  } catch {
+    /* best effort */
+  }
+
+  revalidatePath("/chat", "layout");
+  return { ok: true, text: summary };
+}
+
+/**
+ * Reconstruct an open confirmation after a page refresh: newest
+ * awaiting_confirmation run of this conversation, scoped to the triggering
+ * user. Defensive — a missing table (foundation migration not pushed yet)
+ * yields null.
+ */
+export async function getPendingConfirmation(
+  conversationId: string,
+): Promise<PendingConfirmation | null> {
+  try {
+    const db = await createUserClient();
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return null;
+    const { data } = await db
+      .from("agent_runs")
+      .select("id, pending_action")
+      .eq("conversation_id", conversationId)
+      .eq("status", "awaiting_confirmation")
+      .eq("triggered_by", user.id)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const pending = (data?.pending_action ?? null) as PendingAction | null;
+    if (!data || !pending) return null;
+    return { runId: data.id as string, tool: pending.tool, preview: pending.preview };
+  } catch {
+    return null;
+  }
 }
 
 // ── Saved agents (spec-cockpit.md §9) ────────────────────────────────────

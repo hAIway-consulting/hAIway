@@ -70,7 +70,7 @@ Zusaetzlich stehen dir WERKZEUGE (Tools) zur Verfuegung, um strukturierte Echtze
 - Inhaltliche Wissensfragen ueber Dokumente -> weiterhin AUSSCHLIESSLICH aus den oben gelieferten [Q]-Quellen (die harten Regeln gelten).
 - Wenn weder Tools noch Quellen die Antwort liefern: sage transparent, dass dir die Information fehlt. Erfinde nichts.
 
-Trello-Bereinigung (Tool cleanup_stale_trello_cards): Hol IMMER zuerst die Vorschau (ohne confirm), zeige dem Nutzer die betroffenen Karten + die Ziel-Liste und bitte um Bestaetigung. Rufe das Tool mit confirm=true NUR, wenn der Nutzer im Gespraech ausdruecklich zugestimmt hat. Es wird nur verschoben, nie geloescht.`;
+Schreibende Aktionen (z. B. Trello-Bereinigung): Das System erzeugt beim Tool-Aufruf automatisch NUR eine Vorschau — die tatsaechliche Ausfuehrung bestaetigt der Nutzer anschliessend direkt im UI (Bestaetigen/Abbrechen). Setze niemals selbst einen confirm-Parameter und fordere den Nutzer nicht auf, im Chat zuzustimmen. Beschreibe stattdessen kurz, was die Aktion laut Vorschau aendern wuerde (z. B. betroffene Karten + Ziel-Liste). Es wird nur verschoben, nie geloescht.`;
 
 type OrgAiSettings = {
   system_prompt?: string | null;

@@ -4,6 +4,7 @@ import { isPlatformAdmin } from "@/lib/db/queries/organization";
 import { getMemberRole, requireOrgId } from "@/lib/db/org-context";
 import { hasFeature } from "@/lib/features/flags";
 import { resolveAgentConfig } from "@/lib/ai/agent/config";
+import { getPendingConfirmation } from "../agent-actions";
 import ChatLayout from "../_components/chat-layout";
 
 export default async function ChatConversationPage({
@@ -25,12 +26,14 @@ export default async function ChatConversationPage({
   // Agent mode is offered only when the feature flag is on AND a provider
   // is actually configured — explicit availability, no silent fallback
   // (spec-cockpit.md §12.1/§15).
-  const [data, conversations, models, agentFlag, agentCfg] = await Promise.all([
+  const [data, conversations, models, agentFlag, agentCfg, pendingConfirmation] = await Promise.all([
     getConversation(id),
     isWorkspace ? listMyConversations(50) : listConversations(50),
     getAvailableModels(),
     hasFeature("agent_mode").catch(() => false),
     requireOrgId().then((orgId) => resolveAgentConfig(orgId)).catch(() => ({ available: false })),
+    // Reconstruct an open write confirmation after refresh (spec §12.2).
+    getPendingConfirmation(id),
   ]);
 
   if (!data) notFound();
@@ -46,6 +49,7 @@ export default async function ChatConversationPage({
       isAdmin={admin}
       variant={isWorkspace ? "workspace" : "default"}
       agentAvailable={agentAvailable}
+      pendingConfirmation={pendingConfirmation}
     />
   );
 }

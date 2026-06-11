@@ -19,7 +19,25 @@ export interface AgentTool {
   description: string;
   /** JSON Schema object — maps directly to Anthropic input_schema + OpenAI function.parameters. */
   parameters:  Record<string, unknown>;
+  /** read = query-only; write = side effects -> UI confirmation required (spec §12.2) */
+  access:      "read" | "write";
+  /** minimum org role allowed to use this tool (default: every member) */
+  minRole?:    "member" | "admin";
   handler:     (input: Record<string, unknown>, ctx: AgentContext) => Promise<unknown>;
+}
+
+/**
+ * A write action intercepted at the exec layer (spec §12.2): the handler ran
+ * in preview mode only; the actual execution happens after explicit UI
+ * confirmation — never via the model.
+ */
+export interface PendingAction {
+  id:      string;
+  tool:    string;
+  /** original tool input (without confirm) — re-used verbatim on approval */
+  input:   Record<string, unknown>;
+  /** stringified preview result the model saw */
+  preview: string;
 }
 
 export interface AgentMessage {
@@ -44,6 +62,10 @@ export interface AgentResult {
   usedTools: boolean;
   /** summed across all rounds (incl. final no-tools call) */
   tokenUsage: AgentTokenUsage;
+  /** set when a write tool produced a preview awaiting UI confirmation (spec §12.2) */
+  pendingAction?: PendingAction;
+  /** agent_runs row id (null when audit logging is unavailable) — set by runAgent */
+  runId?: string | null;
 }
 
 export interface AgentRunOptions {
@@ -57,6 +79,8 @@ export interface AgentRunOptions {
   maxRounds?: number;
   /** epoch ms — adapters break to the final no-tools call once reached (spec §12.3) */
   deadline?: number;
+  /** mutable per-run state shared with the exec layer (write interception, spec §12.2) */
+  runState?: { pendingAction?: PendingAction };
 }
 
 export interface AgentAdapter {
