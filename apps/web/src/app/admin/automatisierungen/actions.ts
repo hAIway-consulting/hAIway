@@ -10,6 +10,24 @@ function revalidate(): void {
   revalidatePath("/");
 }
 
+/** Stop semantics (spec-cockpit.md §10): a consultant-stopped automation must
+ * not run. Reads the DB registry via service role; a missing table/row
+ * (foundation migration not pushed yet) tolerantly counts as not stopped. */
+async function isAutomationStopped(orgId: string, key: string): Promise<boolean> {
+  try {
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from("automations")
+      .select("status")
+      .eq("organization_id", orgId)
+      .eq("key", key)
+      .maybeSingle();
+    return !error && data?.status === "stopped";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Manual trigger for the Shopware -> Trello complaint orchestrator. Replaces
  * the (intentionally bypassed) e-mail/message trigger. A failed run is still
@@ -18,6 +36,11 @@ function revalidate(): void {
 export async function runComplaintOrchestrator(): Promise<void> {
   await requireBeraterRole();
   const orgId = await requireOrgId();
+  if (await isAutomationStopped(orgId, WORKFLOW_KEY)) {
+    throw new Error(
+      "Diese Automatisierung ist gestoppt — Start und Stopp steuert dein Berater. Bitte erst wieder aktivieren.",
+    );
+  }
   const user = await getUser();
   await runComplaintToTrello(orgId, user?.id ?? null);
   revalidate();

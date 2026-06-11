@@ -5,6 +5,7 @@ import {
   type Automation,
   type WorkflowRun,
 } from "@/lib/db/queries/workflows";
+import { formatMinutesSaved, formatPerRunMinutes } from "@/lib/format-minutes";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,16 @@ export default async function CustomerAutomationsPage() {
     listWorkflowRuns(orgId, 30).catch(() => [] as WorkflowRun[]),
   ]);
 
+  // KPI v1 (spec-cockpit.md §10): saved time = minutes_saved_per_run ×
+  // successful runs, summed over all automations of the org.
+  const totalMinutesSaved = automations.reduce(
+    (sum, a) => sum + a.minutesSavedPerRun * a.kpi.success,
+    0,
+  );
+
+  // Run rows resolve their workflow_key through the DB registry.
+  const automationNameByKey = new Map(automations.map((a) => [a.key, a.name]));
+
   return (
     <div className="px-4 md:px-8 py-6 md:py-10 max-w-5xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -45,10 +56,35 @@ export default async function CustomerAutomationsPage() {
         </p>
       </header>
 
+      <section
+        className="rounded-xl p-5 flex flex-wrap items-center justify-between gap-3"
+        style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)", boxShadow: "var(--shadow-sm)" }}
+      >
+        <div className="flex flex-col">
+          <span className="text-[11px] font-medium uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
+            Eingesparte Zeit
+          </span>
+          <span
+            className="text-2xl md:text-3xl font-bold mt-1 leading-tight"
+            style={{
+              fontFamily: "var(--font-display)",
+              color: totalMinutesSaved > 0 ? "var(--color-success)" : "var(--color-text)",
+            }}
+          >
+            {formatMinutesSaved(totalMinutesSaved)}
+          </span>
+        </div>
+        <p className="text-[12px] max-w-[280px]" style={{ color: "var(--color-muted)" }}>
+          Summe über alle erfolgreichen Läufe deiner Automatisierungen — pro Lauf ist hinterlegt,
+          wie viele Minuten Handarbeit er ersetzt.
+        </p>
+      </section>
+
       <section className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {automations.map((a) => {
           const rate = a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null;
           const handlungsbedarf = a.kpi.failed > 0;
+          const minutesSaved = a.minutesSavedPerRun * a.kpi.success;
           return (
             <div
               key={a.key}
@@ -80,6 +116,21 @@ export default async function CustomerAutomationsPage() {
                 <Stat label="Fehler" value={String(a.kpi.failed)} tone={handlungsbedarf ? "danger" : "default"} />
                 <Stat label="Quote" value={rate == null ? "—" : `${rate}%`} />
               </div>
+              <div
+                className="mt-3 pt-3 flex flex-wrap items-end justify-between gap-2"
+                style={{ borderTop: "1px solid var(--color-line-soft)" }}
+              >
+                <Stat
+                  label="Zeit gespart"
+                  value={formatMinutesSaved(minutesSaved)}
+                  tone={minutesSaved > 0 ? "success" : "default"}
+                />
+                {a.minutesSavedPerRun > 0 && (
+                  <span className="text-[11px]" style={{ color: "var(--color-placeholder)" }}>
+                    ~{formatPerRunMinutes(a.minutesSavedPerRun)} Min pro Lauf
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] mt-3" style={{ color: "var(--color-placeholder)" }}>
                 Letzter Lauf: {relativeTime(a.kpi.last_run_at)}
               </p>
@@ -101,7 +152,10 @@ export default async function CustomerAutomationsPage() {
           <ul className="flex flex-col gap-2">
             {runs.map((r) => {
               const src = r.source_ref as { customer_name?: string; product_name?: string } | null;
-              const title = [src?.product_name, src?.customer_name].filter(Boolean).join(" · ") || r.workflow_key;
+              const title =
+                [src?.product_name, src?.customer_name].filter(Boolean).join(" · ") ||
+                automationNameByKey.get(r.workflow_key) ||
+                r.workflow_key;
               return (
                 <li
                   key={r.id}
