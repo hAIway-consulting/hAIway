@@ -89,7 +89,7 @@ export async function WorkspaceHome() {
             className="text-[12px] font-semibold uppercase tracking-[0.18em]"
             style={{ color: "var(--color-placeholder)" }}
           >
-            {greeting()}
+            hAIway Cockpit · {greeting()}
           </span>
           <h1
             className="text-3xl md:text-5xl font-bold leading-[1.05] tracking-tight"
@@ -169,7 +169,7 @@ export async function WorkspaceHome() {
       <section className="w-full max-w-5xl mt-10">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-            Letzte Chats
+            Cockpit-Verlauf
           </h2>
           {conversations.length > 0 && (
             <Link href="/chat" className="text-[12px] font-medium" style={{ color: "var(--color-accent)" }}>
