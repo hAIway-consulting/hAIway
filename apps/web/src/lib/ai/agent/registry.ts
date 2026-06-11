@@ -1,6 +1,8 @@
 // Provider-neutral tool registry for the chat agent. Each tool reads/acts on
-// the org's integration data (org-scoped via ctx.orgId). Trello write actions
-// are dry-run unless { confirm: true } and never delete — only move.
+// the org's integration data (org-scoped via ctx.orgId). Write tools run in
+// preview mode from the model loop (exec.ts forces confirm=false); execution
+// only happens via the UI confirmation flow ({ confirm: true } injected by
+// confirmAgentAction) and never deletes — only moves.
 
 import { createServiceClient } from "@/lib/db/supabase-server";
 import {
@@ -15,14 +17,43 @@ import {
   createList,
   moveCard,
 } from "@/lib/orchestrator/trello";
-import type { AgentTool } from "./types";
+import type { AgentTool, MemberRole } from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DAYS_PER_MONTH = 30;
 
+// Role ordering for minRole checks (Rollen-Matrix spec-cockpit.md §11).
+const ROLE_RANK: Record<MemberRole, number> = { member: 0, admin: 1, owner: 2 };
+
+/** true when `role` satisfies a tool's optional minimum role. */
+export function roleSatisfies(
+  role: MemberRole | undefined,
+  minRole?: "member" | "admin",
+): boolean {
+  if (!minRole) return true;
+  return ROLE_RANK[role ?? "member"] >= ROLE_RANK[minRole];
+}
+
+/**
+ * Tools a caller with the given role may use (spec §11/§12.2): `member` gets
+ * read-only tools; each tool's optional minRole is enforced on top. Unknown/
+ * missing role is treated as `member` (least privilege).
+ */
+export function filterToolsForRole(
+  tools: AgentTool[],
+  role: MemberRole | undefined,
+): AgentTool[] {
+  const effective: MemberRole = role ?? "member";
+  return tools.filter((t) => {
+    if (t.access === "write" && effective === "member") return false;
+    return roleSatisfies(effective, t.minRole);
+  });
+}
+
 export const AGENT_TOOLS: AgentTool[] = [
   {
     name: "get_automation_overview",
+    access: "read",
     description:
       "Liefert alle Automatisierungen der Organisation mit Status (aktiv/inaktiv) und KPIs " +
       "(Tickets gesamt, erfolgreich, fehlgeschlagen, Erfolgsquote). Nutze dies für Fragen wie " +
@@ -44,6 +75,7 @@ export const AGENT_TOOLS: AgentTool[] = [
   },
   {
     name: "list_complaint_cases",
+    access: "read",
     description:
       "Listet einzelne Reklamationsfälle (Shopware→Trello-Läufe) mit Kunde, Produkt, Status, " +
       "Datum und Trello-Karten-Link. Für Auswertungen aller Reklamationsfälle.",
@@ -81,6 +113,7 @@ export const AGENT_TOOLS: AgentTool[] = [
   },
   {
     name: "list_trello_cards",
+    access: "read",
     description:
       "Liest die offenen Karten des verbundenen Trello-Boards (Name, Liste, letzte Aktivität, " +
       "Inaktivitäts-Tage, Link). Optional nur Karten, die seit > stale_months Monaten inaktiv sind.",
@@ -112,17 +145,18 @@ export const AGENT_TOOLS: AgentTool[] = [
     name: "cleanup_stale_trello_cards",
     description:
       "Bereinigt das Trello-Board: legt eine Kategorie-Liste für seit > months Monaten inaktive " +
-      "Karten an und verschiebt diese dorthin. WICHTIG: Ohne confirm=true wird NUR eine Vorschau " +
-      "zurückgegeben (was verschoben würde). Rufe confirm=true erst NACH ausdrücklicher Bestätigung " +
-      "des Nutzers. Es wird nur verschoben, nie gelöscht.",
+      "Karten an und verschiebt diese dorthin. Der Aufruf liefert immer nur eine VORSCHAU (was " +
+      "verschoben würde) — die Ausführung bestätigt der Nutzer anschließend direkt im UI. " +
+      "Es wird nur verschoben, nie gelöscht.",
     parameters: {
       type: "object",
       properties: {
-        months:  { type: "number", description: "Inaktivitäts-Schwelle in Monaten (Default 6)." },
-        confirm: { type: "boolean", description: "true = ausführen. Fehlt/false = nur Vorschau." },
+        months: { type: "number", description: "Inaktivitäts-Schwelle in Monaten (Default 6)." },
       },
       additionalProperties: false,
     },
+    access:  "write",
+    minRole: "admin",
     handler: async (input, ctx) => {
       const months = typeof input.months === "number" ? input.months : 6;
       const confirm = input.confirm === true;

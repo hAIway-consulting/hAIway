@@ -15,10 +15,6 @@ import type { ChunkSearchResult } from "@/lib/db/queries/search";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { getOpenAIKeyForChat } from "./embeddings";
-import { runAgent } from "./agent/runAgent";
-import { resolveAgentConfig } from "./agent/config";
-import { AGENT_TOOLS } from "./agent/registry";
-import type { AgentMessage } from "./agent/types";
 
 export type ModelId = "claude" | "gpt-4o" | "gpt-4o-mini";
 
@@ -74,7 +70,7 @@ Zusaetzlich stehen dir WERKZEUGE (Tools) zur Verfuegung, um strukturierte Echtze
 - Inhaltliche Wissensfragen ueber Dokumente -> weiterhin AUSSCHLIESSLICH aus den oben gelieferten [Q]-Quellen (die harten Regeln gelten).
 - Wenn weder Tools noch Quellen die Antwort liefern: sage transparent, dass dir die Information fehlt. Erfinde nichts.
 
-Trello-Bereinigung (Tool cleanup_stale_trello_cards): Hol IMMER zuerst die Vorschau (ohne confirm), zeige dem Nutzer die betroffenen Karten + die Ziel-Liste und bitte um Bestaetigung. Rufe das Tool mit confirm=true NUR, wenn der Nutzer im Gespraech ausdruecklich zugestimmt hat. Es wird nur verschoben, nie geloescht.`;
+Schreibende Aktionen (z. B. Trello-Bereinigung): Das System erzeugt beim Tool-Aufruf automatisch NUR eine Vorschau — die tatsaechliche Ausfuehrung bestaetigt der Nutzer anschliessend direkt im UI (Bestaetigen/Abbrechen). Setze niemals selbst einen confirm-Parameter und fordere den Nutzer nicht auf, im Chat zuzustimmen. Beschreibe stattdessen kurz, was die Aktion laut Vorschau aendern wuerde (z. B. betroffene Karten + Ziel-Liste). Es wird nur verschoben, nie geloescht.`;
 
 type OrgAiSettings = {
   system_prompt?: string | null;
@@ -341,6 +337,117 @@ export async function generateChatTitle(
   }
 }
 
+// ── Saved-agent summarizer (spec-cockpit.md §9) ─────────────────────────
+
+export type SavedAgentDraft = {
+  name: string;
+  description: string;
+  prompt: string;
+};
+
+const DRAFT_NAME_MAX = 40;
+const DRAFT_DESCRIPTION_MAX = 100;
+const DRAFT_PROMPT_MAX = 4000;
+// Keep the summarizer input bounded — long conversations get clipped per
+// turn and to the most recent turns; the recurring task survives clipping.
+const DRAFT_TURNS_MAX = 20;
+const DRAFT_TURN_CHARS_MAX = 2000;
+
+/** Deterministic draft from the user turns — used whenever the LLM path fails. */
+function fallbackAgentDraft(history: ChatTurn[]): SavedAgentDraft {
+  const userTurns = history
+    .filter((t) => t.role === "user")
+    .map((t) => t.content.trim())
+    .filter((t) => t.length > 0);
+  return {
+    name: (userTurns[0] ?? "").slice(0, DRAFT_NAME_MAX),
+    description: "",
+    prompt: userTurns.join("\n\n").slice(0, DRAFT_PROMPT_MAX),
+  };
+}
+
+/**
+ * Summarize a conversation's recurring task into a reusable saved-agent
+ * draft (spec-cockpit.md §9). Uses Claude Haiku like the other helper calls.
+ * The result is ALWAYS shown to the user for review before saving — this
+ * only produces the editable proposal. Degrades to a deterministic draft
+ * built from the user turns when no key is set or parsing fails.
+ */
+export async function summarizeConversationAsAgentPrompt(
+  history: ChatTurn[],
+  usageCtx?: UsageCtx,
+): Promise<SavedAgentDraft> {
+  const fallback = fallbackAgentDraft(history);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return fallback;
+
+  try {
+    const { Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey });
+
+    const transcript = history
+      .slice(-DRAFT_TURNS_MAX)
+      .map(
+        (t) =>
+          `${t.role === "user" ? "Nutzer" : "Assistent"}: ${t.content.slice(0, DRAFT_TURN_CHARS_MAX)}`,
+      )
+      .join("\n\n");
+
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1200,
+      messages: [
+        {
+          role: "user",
+          content: `Analysiere den folgenden Gespraechsverlauf zwischen einem Nutzer und einem KI-Agenten. Fasse die wiederkehrende Taetigkeit, die der Nutzer erledigt haben moechte, als wiederverwendbaren Agenten-Prompt zusammen. Der Prompt muss so formuliert sein, dass ein Agent die Aufgabe kuenftig OHNE den urspruenglichen Verlauf ausfuehren kann: Arbeitsauftrag, Vorgehen, benoetigte Rueckfragen an den Nutzer, gewuenschtes Ergebnisformat.
+
+Antworte NUR mit einem JSON-Objekt, ohne Markdown, ohne Einleitung, exakt in dieser Form:
+{"name": "...", "description": "...", "prompt": "..."}
+
+Regeln:
+- "name": praegnanter deutscher Titel, maximal ${DRAFT_NAME_MAX} Zeichen
+- "description": ein deutscher Satz, maximal ${DRAFT_DESCRIPTION_MAX} Zeichen
+- "prompt": deutscher Agenten-Prompt, maximal ${DRAFT_PROMPT_MAX} Zeichen
+
+Gespraechsverlauf:
+
+${transcript}`,
+        },
+      ],
+    });
+
+    recordHelperUsage(message.usage, "claude-haiku-4-5-20251001", usageCtx);
+
+    const text = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
+      .trim();
+
+    // Accept clean JSON or output wrapped in ``` fences / prose.
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return fallback;
+
+    const parsed: unknown = JSON.parse(jsonMatch[0]);
+    if (typeof parsed !== "object" || parsed === null) return fallback;
+    const draft = parsed as Record<string, unknown>;
+    const name = typeof draft.name === "string" ? draft.name.trim() : "";
+    const description =
+      typeof draft.description === "string" ? draft.description.trim() : "";
+    const prompt = typeof draft.prompt === "string" ? draft.prompt.trim() : "";
+    if (!name || !prompt) return fallback;
+
+    return {
+      name: name.slice(0, DRAFT_NAME_MAX),
+      description: description.slice(0, DRAFT_DESCRIPTION_MAX),
+      prompt: prompt.slice(0, DRAFT_PROMPT_MAX),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 interface LlmCallResult {
   text: string;
   tokensIn: number;
@@ -403,56 +510,6 @@ async function callOpenAI(
 }
 
 /**
- * Run the configured agentic model with the tool registry. Returns null when
- * no agent provider is available or it produced no text, so the caller can
- * fall back to the pure-RAG path.
- */
-async function tryAgentAnswer(p: {
-  history: ChatTurn[];
-  question: string;
-  chunks: ChunkSearchResult[];
-  entityContext?: string;
-  rewrittenQuery?: string;
-  orgId: string;
-  userId?: string;
-}): Promise<ChatResponse | null> {
-  try {
-    const cfg = await resolveAgentConfig(p.orgId);
-    if (!cfg.available) return null;
-
-    const systemPrompt = await buildSystemPrompt(p.entityContext, true);
-    const contextBlock = p.chunks.length ? buildContextBlock(p.chunks) : "(keine Dokument-Treffer)";
-    const messages: AgentMessage[] = [
-      ...p.history.map((h) => ({ role: h.role, content: h.content })),
-      { role: "user", content: `Dokument-Quellen:\n\n${contextBlock}\n\n---\n\nFrage: ${p.question}` },
-    ];
-
-    const result = await runAgent({
-      orgId:    p.orgId,
-      userId:   p.userId,
-      system:   systemPrompt,
-      messages,
-      tools:    AGENT_TOOLS,
-    });
-    if (!result || !result.text.trim()) return null;
-
-    const modelId: ModelId = cfg.kind === "anthropic" ? "claude" : "gpt-4o";
-    return {
-      type:           "answer",
-      text:           result.text,
-      sources:        p.chunks,
-      model:          modelId,
-      rewrittenQuery: p.rewrittenQuery,
-      entityContext:  p.entityContext,
-      tokenUsage:     result.tokenUsage,
-      modelUsed:      cfg.model,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Generate an answer with hallucination guard.
  *
  * - history: previous turns from the conversation (excluding the current user question)
@@ -469,20 +526,8 @@ export async function generateAnswer(params: {
   orgId?: string;
   userId?: string;
 }): Promise<ChatResponse> {
-  const { history, question, chunks, entityContext, rewrittenQuery, orgId, userId } = params;
+  const { history, question, chunks, entityContext, rewrittenQuery } = params;
   const model: ModelId = params.model ?? "claude";
-
-  // Agent (tool-calling) path: answers structured/integration/Trello questions
-  // via tools while still passing the retrieved chunks as document context.
-  // The provider is the org/env-configured agentic model (Anthropic or any
-  // OpenAI-compatible endpoint, incl. locally hosted). Falls back to pure RAG
-  // when no agent provider is available or the agent yields nothing.
-  if (orgId) {
-    const agent = await tryAgentAnswer({
-      history, question, chunks, entityContext, rewrittenQuery, orgId, userId,
-    });
-    if (agent) return agent;
-  }
 
   // Hallucination guard: with no chunks, return a deterministic refusal
   // wrapped as an answer (not "chunks") so the UI shows it inline.

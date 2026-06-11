@@ -7,6 +7,7 @@ import type {
   ConversationListItem,
   StoredMessage,
 } from "../actions";
+import type { PendingConfirmation } from "../agent-actions";
 import type { ModelId } from "@/lib/ai/chat";
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
@@ -28,6 +29,8 @@ export default function ChatLayout(props: {
   models: ModelOption[];
   isAdmin?: boolean;
   variant?: ChatVariant;
+  agentAvailable?: boolean;
+  pendingConfirmation?: PendingConfirmation | null;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const variant = props.variant ?? "default";
@@ -43,6 +46,8 @@ export default function ChatLayout(props: {
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => {}}
           variant="workspace"
+          agentAvailable={props.agentAvailable ?? false}
+          pendingConfirmation={props.pendingConfirmation ?? null}
         />
       </main>
     );
@@ -98,6 +103,8 @@ export default function ChatLayout(props: {
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => setDrawerOpen(true)}
           variant="default"
+          agentAvailable={props.agentAvailable ?? false}
+          pendingConfirmation={props.pendingConfirmation ?? null}
         />
       </main>
     </div>

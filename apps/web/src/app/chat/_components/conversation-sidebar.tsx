@@ -110,6 +110,17 @@ export default function ConversationSidebar({
                       }}
                     >
                       <span className="truncate flex-1">{c.title}</span>
+                      {c.mode === "agent" && (
+                        <span
+                          className="ml-1.5 shrink-0 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                          style={{
+                            background: "var(--color-accent-soft)",
+                            color: "var(--color-accent)",
+                          }}
+                        >
+                          Agent
+                        </span>
+                      )}
                     </Link>
                     <button
                       type="button"

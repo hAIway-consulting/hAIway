@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { startChat } from "./actions";
+import { ModeToggle, type ComposerMode } from "@/app/chat/_components/chat-composer";
 
 // Web Speech API — Browser-Diktat. Chrome / Edge / Safari unterstützen es;
 // Firefox nicht. Wir feature-detecten und blenden den Mikro-Button aus,
@@ -35,7 +36,15 @@ function getSpeechCtor(): { new (): SpeechRecognitionLike } | null {
  * - Mikrofon-Button für Diktat (Web Speech API, deutsch)
  * - Pending-State während Server-Action läuft
  */
-export function HeroAsk({ placeholder }: { placeholder: string }) {
+export function HeroAsk({
+  placeholder,
+  agentAvailable = false,
+}: {
+  placeholder: string;
+  /** agent_mode flag + provider availability — shows the Chat/Agent toggle */
+  agentAvailable?: boolean;
+}) {
+  const [mode, setMode] = useState<ComposerMode>("chat");
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -133,14 +142,20 @@ export function HeroAsk({ placeholder }: { placeholder: string }) {
             }
           }}
         />
-        <div className="flex items-center justify-between gap-2 pl-2">
-          <span className="text-[11px]" style={{ color: unsupportedHint ? "var(--color-warning)" : "var(--color-placeholder)" }}>
+        <input type="hidden" name="mode" value={mode} />
+        <div className="flex items-center justify-between gap-2 pl-2 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            {agentAvailable && (
+              <ModeToggle mode={mode} locked={false} disabled={pending} onSelect={setMode} />
+            )}
+          <span className="text-[11px] truncate" style={{ color: unsupportedHint ? "var(--color-warning)" : "var(--color-placeholder)" }}>
             {unsupportedHint
               ? "Diktat funktioniert nur in Chrome, Edge und Safari."
               : recording
               ? "Höre zu — sprich einfach drauflos…"
               : "Enter zum Senden · Shift+Enter für neue Zeile"}
           </span>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"

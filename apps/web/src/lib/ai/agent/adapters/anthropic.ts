@@ -35,6 +35,9 @@ export const anthropicAdapter: AgentAdapter = {
     };
 
     for (let round = 0; round < maxRounds; round++) {
+      // Deadline (spec-cockpit.md §12.3): break to the final no-tools call
+      // for a clean partial result instead of starting another round.
+      if (opts.deadline && Date.now() >= opts.deadline) break;
       const resp = await client.messages.create({
         model:      opts.model,
         max_tokens: 1500,
@@ -53,7 +56,7 @@ export const anthropicAdapter: AgentAdapter = {
         .join("");
 
       if (resp.stop_reason !== "tool_use" || toolUses.length === 0) {
-        return { text, steps, usedTools, tokenUsage };
+        return { text, steps, usedTools, tokenUsage, pendingAction: opts.runState?.pendingAction };
       }
 
       usedTools = true;
@@ -67,6 +70,10 @@ export const anthropicAdapter: AgentAdapter = {
         results.push({ type: "tool_result", tool_use_id: tu.id, content: output });
       }
       messages.push({ role: "user", content: results });
+
+      // Write preview pending (spec §12.2): stop tool rounds — the final
+      // no-tools call below turns the preview into the user-facing text.
+      if (opts.runState?.pendingAction) break;
     }
 
     // Out of rounds → one final call without tools to force a text answer.
@@ -81,6 +88,6 @@ export const anthropicAdapter: AgentAdapter = {
       .filter((b): b is AnthropicSDK.TextBlock => b.type === "text")
       .map((b) => b.text)
       .join("");
-    return { text, steps, usedTools, tokenUsage };
+    return { text, steps, usedTools, tokenUsage, pendingAction: opts.runState?.pendingAction };
   },
 };

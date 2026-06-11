@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createConversation, sendMessage } from "@/app/chat/actions";
+import { sendAgentMessage } from "@/app/chat/agent-actions";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 
@@ -15,16 +16,19 @@ import { requireOrgId } from "@/lib/db/org-context";
 export async function startChat(formData: FormData): Promise<void> {
   const raw = (formData.get("question") as string | null) ?? "";
   const agentPrompt = (formData.get("agentPrompt") as string | null) ?? "";
+  const mode = (formData.get("mode") as string | null) === "agent" ? "agent" : "chat";
   const question = raw.trim();
   if (!question) return;
 
   const composed = agentPrompt ? `${agentPrompt}\n\n${question}` : question;
 
-  const id = await createConversation();
-  // Fire-and-forget: sendMessage persists the user message immediately, so we
-  // can redirect into the conversation while the assistant answer streams in.
-  // Awaiting it keeps the UX coherent — the chat page sees both messages.
-  await sendMessage(id, composed);
+  const id = await createConversation(mode);
+  // Awaiting keeps the UX coherent — the chat page sees both messages.
+  if (mode === "agent") {
+    await sendAgentMessage(id, composed);
+  } else {
+    await sendMessage(id, composed);
+  }
   redirect(`/chat/${id}`);
 }
 
@@ -39,6 +43,42 @@ export async function startAgent(formData: FormData): Promise<void> {
 
   const id = await createConversation();
   await sendMessage(id, prompt);
+  redirect(`/chat/${id}`);
+}
+
+/**
+ * One-Click-Start eines gespeicherten Agenten (spec-cockpit.md §9): lädt die
+ * saved_agents-Zeile per User-Client (RLS entscheidet Sichtbarkeit), startet
+ * eine Agent-Konversation mit dem gespeicherten Prompt — v1 feste Ausführung
+ * ohne Parameter — und leitet auf /chat/{id} weiter. Der Lauf landet über
+ * savedAgentId im agent_runs-Audit (spec §13).
+ */
+export async function startSavedAgent(formData: FormData): Promise<void> {
+  const agentId = ((formData.get("agentId") as string | null) ?? "").trim();
+  if (!agentId) return;
+
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const { data: agent } = await db
+    .from("saved_agents")
+    .select("id, prompt, status")
+    .eq("id", agentId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!agent) {
+    throw new Error("Agent nicht gefunden oder nicht freigegeben.");
+  }
+  if (agent.status !== "active") {
+    throw new Error(
+      "Dieser Agent ist deaktiviert. Euer Berater kann ihn wieder aktivieren.",
+    );
+  }
+
+  const id = await createConversation("agent");
+  await sendAgentMessage(id, agent.prompt as string, {
+    savedAgentId: agent.id as string,
+  });
   redirect(`/chat/${id}`);
 }
 

@@ -1,8 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { startAgent } from "./actions";
+import { startAgent, startSavedAgent } from "./actions";
 import type { WorkspaceAgent } from "./agents";
+
+// DB-backed saved agents carry a uuid id; the pre-migration STUB_AGENTS use
+// slugs like "angebot" and keep the legacy prompt-into-chat path.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const accentVar: Record<WorkspaceAgent["accent"], { soft: string; solid: string }> = {
   teal:   { soft: "color-mix(in srgb, var(--color-accent) 14%, transparent)", solid: "var(--color-accent)" },
@@ -63,14 +68,19 @@ function AgentIcon({ icon, color }: { icon: WorkspaceAgent["icon"]; color: strin
 export function AgentTile({ agent }: { agent: WorkspaceAgent }) {
   const [pending, startTransition] = useTransition();
   const colors = accentVar[agent.accent];
+  const isSavedAgent = UUID_RE.test(agent.id);
 
   return (
     <form
-      action={startAgent}
+      action={isSavedAgent ? startSavedAgent : startAgent}
       onSubmit={() => startTransition(() => {})}
       className="contents"
     >
-      <input type="hidden" name="agentPrompt" value={agent.prompt} />
+      {isSavedAgent ? (
+        <input type="hidden" name="agentId" value={agent.id} />
+      ) : (
+        <input type="hidden" name="agentPrompt" value={agent.prompt} />
+      )}
       <button
         type="submit"
         disabled={pending}
