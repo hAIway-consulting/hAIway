@@ -2,7 +2,6 @@
 
 import {
   IconHome,
-  IconSearch,
   IconChat,
   IconPhone,
   IconBox,
@@ -13,7 +12,8 @@ import {
 
 /**
  * Workspace-Sidebar — End-User-Sicht.
- * Bewusst minimal: Übersicht, Chat, Suche, optional Telefon.
+ * Bewusst minimal: Übersicht, Cockpit, optional Telefon.
+ * Die frühere Suche ist im Cockpit aufgegangen (Chat-Modus = Hybrid-Suche).
  * Kein Datei-Upload, keine Verwaltungs-Items.
  */
 export function NavWorkspace({ hasPhoneAssistant }: { hasPhoneAssistant?: boolean }) {
@@ -21,8 +21,7 @@ export function NavWorkspace({ hasPhoneAssistant }: { hasPhoneAssistant?: boolea
     {
       label: "Arbeiten",
       items: [
-        { href: "/chat", label: "Chats", icon: IconChat },
-        { href: "/search", label: "Suchen", icon: IconSearch },
+        { href: "/chat", label: "hAIway Cockpit", icon: IconChat },
         { href: "/automatisierungen", label: "Automatisierungen", icon: IconBox },
       ],
     },
