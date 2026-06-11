@@ -28,6 +28,11 @@ export const anthropicAdapter: AgentAdapter = {
     const steps: AgentStep[] = [];
     let usedTools = false;
     const maxRounds = opts.maxRounds ?? 5;
+    const tokenUsage = { in: 0, out: 0 };
+    const addUsage = (u?: { input_tokens?: number; output_tokens?: number }) => {
+      tokenUsage.in += u?.input_tokens ?? 0;
+      tokenUsage.out += u?.output_tokens ?? 0;
+    };
 
     for (let round = 0; round < maxRounds; round++) {
       const resp = await client.messages.create({
@@ -37,6 +42,7 @@ export const anthropicAdapter: AgentAdapter = {
         tools,
         messages,
       });
+      addUsage(resp.usage);
 
       const toolUses = resp.content.filter(
         (b): b is AnthropicSDK.ToolUseBlock => b.type === "tool_use",
@@ -47,7 +53,7 @@ export const anthropicAdapter: AgentAdapter = {
         .join("");
 
       if (resp.stop_reason !== "tool_use" || toolUses.length === 0) {
-        return { text, steps, usedTools };
+        return { text, steps, usedTools, tokenUsage };
       }
 
       usedTools = true;
@@ -70,10 +76,11 @@ export const anthropicAdapter: AgentAdapter = {
       system:     opts.system,
       messages,
     });
+    addUsage(final.usage);
     const text = final.content
       .filter((b): b is AnthropicSDK.TextBlock => b.type === "text")
       .map((b) => b.text)
       .join("");
-    return { text, steps, usedTools };
+    return { text, steps, usedTools, tokenUsage };
   },
 };

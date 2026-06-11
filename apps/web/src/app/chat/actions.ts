@@ -27,6 +27,8 @@ import {
   type ChatTurn,
   type ModelId,
 } from "@/lib/ai/chat";
+import { recordAiUsage, providerFromModel } from "@/lib/ai/usage";
+import { checkAiQuota } from "@/lib/ai/quota";
 
 export type ConversationListItem = {
   id: string;
@@ -253,6 +255,20 @@ export async function sendMessage(
   const { data: { user } } = await db.auth.getUser();
   const userId = user?.id;
 
+  // Quota gate (spec-cockpit.md §12.3): monthly token budget from
+  // plan_tiers.limits, enforced over the ai_usage_events rollup.
+  const quota = await checkAiQuota(orgId);
+  if (quota.exceeded) {
+    return {
+      type: "answer",
+      text: quota.message,
+      sources: [],
+      model,
+    };
+  }
+
+  const usageCtx = { orgId, userId };
+
   // 1. Load history
   const { data: historyRows } = await db
     .from("chat_messages")
@@ -278,13 +294,13 @@ export async function sendMessage(
     .slice(-HISTORY_WINDOW)
     .map((m) => ({ role: m.role, content: m.content }));
 
-  const searchQuery = await rewriteFollowUpQuery(trimmed, history);
+  const searchQuery = await rewriteFollowUpQuery(trimmed, history, usageCtx);
 
   // 4. Query expansion — generate 2-3 paraphrases so the hybrid retrieval
   //    isn't at the mercy of exact wording (compound words, synonyms, register).
   //    Always includes the original searchQuery as variants[0]; degrades to
   //    a single-variant run if expansion is unavailable.
-  const variants = await expandQuery(searchQuery);
+  const variants = await expandQuery(searchQuery, usageCtx);
 
   // 5. Entity-aware retrieval — boost sources linked to named entities in
   //    the query (companies / contacts / projects mentioned by name).
@@ -396,7 +412,7 @@ export async function sendMessage(
   // .throwOnError() so future schema drift is loud, not silent — the
   // earlier bug shipped undetected because the insert error was ignored.
   if (response.type === "answer") {
-    await db
+    const { data: inserted } = await db
       .from("chat_messages")
       .insert({
         conversation_id: conversationId,
@@ -407,9 +423,27 @@ export async function sendMessage(
         model: response.model,
         entity_context: entityContext ?? null,
         rewritten_query: response.rewrittenQuery ?? null,
+        token_usage: response.tokenUsage ?? null,
         ...telemetry,
       })
+      .select("id")
+      .single()
       .throwOnError();
+
+    // Usage rollup (spec §5.2) — fire-and-forget, never blocks the answer.
+    if (response.tokenUsage && response.modelUsed) {
+      void recordAiUsage({
+        orgId,
+        userId,
+        provider:  providerFromModel(response.modelUsed),
+        model:     response.modelUsed,
+        purpose:   "chat",
+        tokensIn:  response.tokenUsage.in,
+        tokensOut: response.tokenUsage.out,
+        refType:   "chat_message",
+        refId:     inserted?.id ?? null,
+      });
+    }
   } else {
     // chunks-only fallback (LLM unavailable) — store as a system note
     await db
@@ -431,7 +465,7 @@ export async function sendMessage(
 
   // 8. Auto-title on first turn
   if (allHistory.length === 0) {
-    const title = await generateChatTitle(trimmed);
+    const title = await generateChatTitle(trimmed, usageCtx);
     await db
       .from("chat_conversations")
       .update({ title, model })

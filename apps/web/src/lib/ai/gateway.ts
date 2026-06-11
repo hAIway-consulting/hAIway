@@ -95,3 +95,52 @@ export function resolveOrgModel(orgMetadata: Record<string, unknown> | null | un
   const aiSettings = (orgMetadata as { ai_settings?: { default_model?: string } } | null | undefined)?.ai_settings;
   return aiSettings?.default_model || DEFAULT_MODEL_STRING;
 }
+
+export interface OrgAiConfig {
+  /** gateway model string, e.g. "anthropic/claude-sonnet-4-6" */
+  modelString: string;
+  /** provider segment of the model string */
+  provider: string;
+  /** resolved API key (tenant → platform → env) or undefined for the gateway path */
+  apiKey?: string;
+  /** where the key came from */
+  keySource?: "tenant" | "platform" | "env";
+  /** routing constraints from the key row, e.g. { eu_only: true } */
+  constraints: Record<string, unknown>;
+}
+
+/**
+ * Combined per-tenant routing config (spec-cockpit.md §5.2/§5.3): the org's
+ * default model plus the resolved provider key. When a DB key exists, callers
+ * instantiate the provider SDK directly with that key; the env fallback keeps
+ * today's gateway path working.
+ */
+export async function resolveOrgAiConfig(orgId: string): Promise<OrgAiConfig> {
+  const { createUserClient } = await import("@/lib/db/supabase-server");
+  const { resolveProviderKey } = await import("@/lib/ai/provider-keys");
+
+  let metadata: Record<string, unknown> | null = null;
+  try {
+    const db = await createUserClient();
+    const { data } = await db
+      .from("organizations")
+      .select("metadata")
+      .eq("id", orgId)
+      .single();
+    metadata = (data?.metadata as Record<string, unknown>) ?? null;
+  } catch {
+    /* fall back to defaults */
+  }
+
+  const modelString = resolveOrgModel(metadata);
+  const provider = modelString.split("/")[0] ?? "anthropic";
+  const resolved = await resolveProviderKey(provider, orgId);
+
+  return {
+    modelString,
+    provider,
+    apiKey: resolved?.apiKey,
+    keySource: resolved?.source,
+    constraints: resolved?.constraints ?? {},
+  };
+}

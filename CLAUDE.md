@@ -144,6 +144,9 @@ Optional / situativ:
 ```
 ANTHROPIC_API_KEY=          # in Vercel NICHT gesetzt; Edge-Functions ziehen ihn aus Supabase Secrets.
                             # Lokal nur fuer Chat-Features noetig — aus console.anthropic.com kopieren.
+AI_KEYS_ENCRYPTION_SECRET=  # verschluesselt ai_provider_keys (AES-256-GCM). In Vercel UND Supabase
+                            # Function Secrets identisch setzen. ACHTUNG: Verlust brickt gespeicherte
+                            # Tenant-Keys (Env-Fallback haelt die Plattform am Leben, Keys neu erfassen).
 ```
 
 ## Sub-Dokumentation

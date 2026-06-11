@@ -6,7 +6,8 @@ import { requireOrgId } from "@/lib/db/org-context";
 import { listAutomations, type Automation } from "@/lib/db/queries/workflows";
 import { HeroAsk } from "./hero-ask";
 import { AgentTile } from "./agent-tile";
-import { STUB_AGENTS } from "./agents";
+import { STUB_AGENTS, type WorkspaceAgent } from "./agents";
+import { listVisibleSavedAgents } from "@/lib/db/queries/saved-agents";
 
 function greeting(now = new Date()): string {
   const h = now.getHours();
@@ -54,8 +55,25 @@ export async function WorkspaceHome() {
   ]);
 
   let automations: Automation[] = [];
+  let agents: WorkspaceAgent[] = STUB_AGENTS;
   try {
-    automations = await listAutomations(await requireOrgId());
+    const orgId = await requireOrgId();
+    automations = await listAutomations(orgId);
+
+    // DB-backed saved agents (spec-cockpit.md §9); STUB_AGENTS stay as a
+    // fallback until the foundation migration is pushed + seeded.
+    const saved = await listVisibleSavedAgents(orgId);
+    if (saved.length > 0) {
+      const accents: WorkspaceAgent["accent"][] = ["teal", "violet", "sky", "amber", "rose"];
+      agents = saved.map((a, i) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        prompt: a.prompt,
+        accent: a.ui.accent ?? accents[i % accents.length],
+        icon: a.ui.icon ?? "draft",
+      }));
+    }
   } catch {
     automations = [];
   }
@@ -141,7 +159,7 @@ export async function WorkspaceHome() {
           </span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {STUB_AGENTS.map((agent) => (
+          {agents.map((agent) => (
             <AgentTile key={agent.id} agent={agent} />
           ))}
         </div>

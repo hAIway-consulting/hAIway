@@ -8,6 +8,7 @@
 
 import { createUserClient } from "@/lib/db/supabase-server";
 import { getOpenAIKeyForChat } from "@/lib/ai/embeddings";
+import { resolveProviderKey } from "@/lib/ai/provider-keys";
 
 export type AgentKind = "anthropic" | "openai-compatible";
 
@@ -63,11 +64,22 @@ export async function resolveAgentConfig(orgId?: string): Promise<ResolvedAgentC
     }
   }
 
-  // 3. API key — env-only (never stored in DB). Local endpoints often need none.
-  let apiKey =
-    process.env.AGENT_API_KEY ||
-    (kind === "anthropic" ? process.env.ANTHROPIC_API_KEY : getOpenAIKeyForChat()) ||
-    undefined;
+  // 3. API key — resolution chain: explicit env override → tenant key →
+  //    platform key → env fallback (spec-cockpit.md §5.2). Local endpoints
+  //    often need none.
+  let apiKey = process.env.AGENT_API_KEY || undefined;
+  if (!apiKey) {
+    const resolved = await resolveProviderKey(
+      kind === "anthropic" ? "anthropic" : "openai",
+      orgId,
+    );
+    apiKey = resolved?.apiKey;
+  }
+  if (!apiKey) {
+    apiKey =
+      (kind === "anthropic" ? process.env.ANTHROPIC_API_KEY : getOpenAIKeyForChat()) ||
+      undefined;
+  }
 
   // Default provider with no Anthropic key but an OpenAI key present → use the
   // OpenAI-compatible path so the agent still works (mirrors the chat fallback).
