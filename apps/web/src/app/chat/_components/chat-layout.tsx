@@ -15,11 +15,11 @@ type ModelOption = { id: ModelId; label: string; available: boolean };
 export type ChatVariant = "default" | "workspace";
 
 /**
- * Chat-Layout. Im "workspace"-Variant (End-User auf der HAIway-Workspace-Home)
- * fällt die Konversations-Sidebar weg — die "Letzte Chats"-Liste lebt bereits
- * auf der Home, ein dauerhaftes Sidebar-Panel doppelt das nur und nimmt Fokus
- * vom eigentlichen Gespräch. Berater + HAIway-Persona bekommen weiterhin die
- * volle Sidebar für Audit-/QA-Sicht.
+ * Chat-Layout. Beide Varianten zeigen die Konversations-Sidebar mit
+ * Modus-Reitern (spec §2: Verlauf lebt im Cockpit, nicht auf der Übersicht) —
+ * Desktop links fest, mobil als Drawer. Die "workspace"-Variante (End-User)
+ * unterscheidet sich nur im ChatView-Look und in der Höhe unter der
+ * WorkspaceShell-Topbar; Berater + HAIway behalten die volle Audit-Sicht.
  */
 export default function ChatLayout(props: {
   activeId: string;
@@ -35,26 +35,14 @@ export default function ChatLayout(props: {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const variant = props.variant ?? "default";
 
-  if (variant === "workspace") {
-    return (
-      <main className="flex flex-col min-w-0 h-[calc(100dvh-var(--header-h))]">
-        <ChatView
-          conversationId={props.activeId}
-          conversation={props.conversation}
-          initialMessages={props.messages}
-          models={props.models}
-          isAdmin={props.isAdmin ?? false}
-          onOpenDrawer={() => {}}
-          variant="workspace"
-          agentAvailable={props.agentAvailable ?? false}
-          pendingConfirmation={props.pendingConfirmation ?? null}
-        />
-      </main>
-    );
-  }
-
   return (
-    <div className="flex h-[100dvh] md:h-full md:min-h-[100dvh]">
+    <div
+      className={
+        variant === "workspace"
+          ? "flex h-[calc(100dvh-var(--header-h))]"
+          : "flex h-[100dvh] md:h-full md:min-h-[100dvh]"
+      }
+    >
       {/* Desktop sidebar */}
       <aside
         className="hidden md:flex md:w-72 lg:w-80 shrink-0 flex-col border-r"
@@ -66,6 +54,7 @@ export default function ChatLayout(props: {
         <ConversationSidebar
           conversations={props.conversations}
           activeId={props.activeId}
+          agentAvailable={props.agentAvailable ?? false}
         />
       </aside>
 
@@ -88,6 +77,7 @@ export default function ChatLayout(props: {
               conversations={props.conversations}
               activeId={props.activeId}
               onNavigate={() => setDrawerOpen(false)}
+              agentAvailable={props.agentAvailable ?? false}
             />
           </aside>
         </>
@@ -102,7 +92,7 @@ export default function ChatLayout(props: {
           models={props.models}
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => setDrawerOpen(true)}
-          variant="default"
+          variant={variant}
           agentAvailable={props.agentAvailable ?? false}
           pendingConfirmation={props.pendingConfirmation ?? null}
         />

@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { createConversation, deleteConversation } from "../actions";
-import type { ConversationListItem } from "../actions";
+import type { ConversationListItem, ConversationMode } from "../actions";
 import { btn, styles } from "@/components/ui/table-classes";
+
+type HistoryFilter = "alle" | ConversationMode;
 
 type Group = { label: string; items: ConversationListItem[] };
 
@@ -33,18 +35,31 @@ export default function ConversationSidebar({
   conversations,
   activeId,
   onNavigate,
+  agentAvailable = false,
 }: {
   conversations: ConversationListItem[];
   activeId: string;
   onNavigate?: () => void;
+  /** agent_mode flag + provider availability — enables the Agent tab's new button */
+  agentAvailable?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const groups = groupByDate(conversations);
+  // History tabs (spec §2 Konversationsverlauf): like Claude's surface
+  // switcher — filter the history by mode; "Neu" creates in the active mode.
+  const [filter, setFilter] = useState<HistoryFilter>("alle");
+  const hasAgentConversations = conversations.some((c) => c.mode === "agent");
+  const showAgentTab = agentAvailable || hasAgentConversations;
+  const filtered =
+    filter === "alle" ? conversations : conversations.filter((c) => (c.mode ?? "chat") === filter);
+  const groups = groupByDate(filtered);
+  const newMode: ConversationMode = filter === "agent" ? "agent" : "chat";
+  const newDisabled = pending || (newMode === "agent" && !agentAvailable);
 
   function handleNew() {
+    if (newDisabled) return;
     startTransition(async () => {
-      const id = await createConversation();
+      const id = await createConversation(newMode);
       onNavigate?.();
       router.push(`/chat/${id}`);
       router.refresh();
@@ -59,27 +74,68 @@ export default function ConversationSidebar({
     });
   }
 
+  const tabs: { id: HistoryFilter; label: string }[] = [
+    { id: "alle", label: "Alle" },
+    { id: "chat", label: "Chat" },
+    ...(showAgentTab ? [{ id: "agent" as const, label: "Agent" }] : []),
+  ];
+
   return (
     <div className="flex flex-col h-full">
       <div
-        className="shrink-0 px-4 py-4 border-b"
+        className="shrink-0 px-3 pt-3 pb-4 border-b flex flex-col gap-3"
         style={{ borderColor: "var(--color-line-soft)" }}
       >
+        <div
+          className="flex rounded-xl p-0.5"
+          style={{ background: "var(--color-bg-elevated)", border: "1px solid var(--color-line)" }}
+          role="tablist"
+          aria-label="Verlauf filtern"
+        >
+          {tabs.map((t) => {
+            const active = filter === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setFilter(t.id)}
+                className="flex-1 min-h-[44px] rounded-[10px] text-[13px] font-semibold transition-all"
+                style={{
+                  background: active ? "var(--color-accent)" : "transparent",
+                  color: active ? "var(--color-accent-text)" : "var(--color-muted)",
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           onClick={handleNew}
-          disabled={pending}
+          disabled={newDisabled}
           className={btn.primary}
-          style={{ ...styles.accent, width: "100%", opacity: pending ? 0.6 : 1 }}
+          style={{ ...styles.accent, width: "100%", opacity: newDisabled ? 0.6 : 1 }}
+          title={
+            newMode === "agent" && !agentAvailable
+              ? "Agenten-Modus ist für eure Organisation nicht aktiviert"
+              : undefined
+          }
         >
-          + Neuer Chat
+          {newMode === "agent" ? "+ Neuer Agent" : "+ Neuer Chat"}
         </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {conversations.length === 0 && (
+        {filtered.length === 0 && (
           <p className="text-xs px-2 py-4" style={styles.muted}>
-            Noch keine Chats. Lege einen neuen an.
+            {filter === "agent"
+              ? "Noch keine Agent-Konversationen."
+              : filter === "chat"
+              ? "Noch keine Chats. Lege einen neuen an."
+              : "Noch keine Konversationen. Lege eine neue an."}
           </p>
         )}
 
