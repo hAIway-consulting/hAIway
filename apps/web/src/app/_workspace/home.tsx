@@ -8,6 +8,8 @@ import { HeroAsk } from "./hero-ask";
 import { AgentTile } from "./agent-tile";
 import { STUB_AGENTS, type WorkspaceAgent } from "./agents";
 import { listVisibleSavedAgents } from "@/lib/db/queries/saved-agents";
+import { hasFeature } from "@/lib/features/flags";
+import { resolveAgentConfig } from "@/lib/ai/agent/config";
 
 function greeting(now = new Date()): string {
   const h = now.getHours();
@@ -56,9 +58,16 @@ export async function WorkspaceHome() {
 
   let automations: Automation[] = [];
   let agents: WorkspaceAgent[] = STUB_AGENTS;
+  let agentAvailable = false;
   try {
     const orgId = await requireOrgId();
     automations = await listAutomations(orgId);
+
+    const [agentFlag, agentCfg] = await Promise.all([
+      hasFeature("agent_mode").catch(() => false),
+      resolveAgentConfig(orgId).catch(() => ({ available: false })),
+    ]);
+    agentAvailable = agentFlag && agentCfg.available;
 
     // DB-backed saved agents (spec-cockpit.md §9); STUB_AGENTS stay as a
     // fallback until the foundation migration is pushed + seeded.
@@ -99,7 +108,10 @@ export async function WorkspaceHome() {
           </h1>
         </div>
 
-        <HeroAsk placeholder={'Frag mich etwas zu deinen Daten — z. B. „Welche Pilotkunden sind diese Woche aktiv?"'} />
+        <HeroAsk
+          placeholder={'Frag mich etwas zu deinen Daten — z. B. „Welche Pilotkunden sind diese Woche aktiv?"'}
+          agentAvailable={agentAvailable}
+        />
       </section>
 
       {/* ── Heute / Inbox ── */}
@@ -213,6 +225,14 @@ export async function WorkspaceHome() {
                     <span className="text-[14px] font-medium truncate" style={{ color: "var(--color-text)" }}>
                       {c.title || "Neuer Chat"}
                     </span>
+                    {c.mode === "agent" && (
+                      <span
+                        className="shrink-0 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+                      >
+                        Agent
+                      </span>
+                    )}
                   </span>
                   <span className="text-[11px] shrink-0" style={{ color: "var(--color-placeholder)" }}>
                     {relativeTime(c.last_message_at)}

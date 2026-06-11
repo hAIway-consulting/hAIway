@@ -35,6 +35,9 @@ export const anthropicAdapter: AgentAdapter = {
     };
 
     for (let round = 0; round < maxRounds; round++) {
+      // Deadline (spec-cockpit.md §12.3): break to the final no-tools call
+      // for a clean partial result instead of starting another round.
+      if (opts.deadline && Date.now() >= opts.deadline) break;
       const resp = await client.messages.create({
         model:      opts.model,
         max_tokens: 1500,

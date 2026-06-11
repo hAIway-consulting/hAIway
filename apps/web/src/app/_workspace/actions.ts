@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createConversation, sendMessage } from "@/app/chat/actions";
+import { sendAgentMessage } from "@/app/chat/agent-actions";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 
@@ -15,16 +16,19 @@ import { requireOrgId } from "@/lib/db/org-context";
 export async function startChat(formData: FormData): Promise<void> {
   const raw = (formData.get("question") as string | null) ?? "";
   const agentPrompt = (formData.get("agentPrompt") as string | null) ?? "";
+  const mode = (formData.get("mode") as string | null) === "agent" ? "agent" : "chat";
   const question = raw.trim();
   if (!question) return;
 
   const composed = agentPrompt ? `${agentPrompt}\n\n${question}` : question;
 
-  const id = await createConversation();
-  // Fire-and-forget: sendMessage persists the user message immediately, so we
-  // can redirect into the conversation while the assistant answer streams in.
-  // Awaiting it keeps the UX coherent — the chat page sees both messages.
-  await sendMessage(id, composed);
+  const id = await createConversation(mode);
+  // Awaiting keeps the UX coherent — the chat page sees both messages.
+  if (mode === "agent") {
+    await sendAgentMessage(id, composed);
+  } else {
+    await sendMessage(id, composed);
+  }
   redirect(`/chat/${id}`);
 }
 

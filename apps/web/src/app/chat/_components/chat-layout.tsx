@@ -28,6 +28,7 @@ export default function ChatLayout(props: {
   models: ModelOption[];
   isAdmin?: boolean;
   variant?: ChatVariant;
+  agentAvailable?: boolean;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const variant = props.variant ?? "default";
@@ -43,6 +44,7 @@ export default function ChatLayout(props: {
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => {}}
           variant="workspace"
+          agentAvailable={props.agentAvailable ?? false}
         />
       </main>
     );
@@ -98,6 +100,7 @@ export default function ChatLayout(props: {
           isAdmin={props.isAdmin ?? false}
           onOpenDrawer={() => setDrawerOpen(true)}
           variant="default"
+          agentAvailable={props.agentAvailable ?? false}
         />
       </main>
     </div>

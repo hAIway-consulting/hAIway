@@ -30,14 +30,82 @@ function getSpeechCtor(): { new (): SpeechRecognitionLike } | null {
  * Mikrofon-Button, Send-Button. Der Owner-Component reicht das Senden über
  * `onSubmit(text)` ein und steuert pending/disabled-State von außen.
  */
+export type ComposerMode = "chat" | "agent";
+
+/**
+ * Segmented Chat/Agent toggle (spec-cockpit.md §12.1). When the conversation
+ * already has messages the mode is locked — tapping the other mode hands off
+ * to `onSwitchMode` (new conversation, §12.4: no mixed conversations).
+ */
+export function ModeToggle({
+  mode,
+  locked,
+  disabled,
+  onSelect,
+}: {
+  mode: ComposerMode;
+  locked: boolean;
+  disabled?: boolean;
+  onSelect: (mode: ComposerMode) => void;
+}) {
+  const options: { id: ComposerMode; label: string }[] = [
+    { id: "chat", label: "Chat" },
+    { id: "agent", label: "Agent" },
+  ];
+  return (
+    <div
+      className="inline-flex items-center rounded-xl p-0.5"
+      style={{ background: "var(--color-bg-elevated)", border: "1px solid var(--color-line)" }}
+      role="group"
+      aria-label="Modus wählen"
+    >
+      {options.map((o) => {
+        const active = mode === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            disabled={disabled}
+            aria-pressed={active}
+            title={
+              locked && !active
+                ? "Moduswechsel startet eine neue Konversation"
+                : o.id === "agent"
+                  ? "Agent: nutzt Werkzeuge auf euren Daten"
+                  : "Chat: Antworten aus euren Quellen"
+            }
+            onClick={() => onSelect(o.id)}
+            className="min-h-[44px] px-3.5 rounded-[10px] text-[13px] font-semibold transition-all disabled:opacity-50"
+            style={{
+              background: active ? "var(--color-accent)" : "transparent",
+              color: active ? "var(--color-accent-text)" : "var(--color-muted)",
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ChatComposer({
   pending,
   onSubmit,
   placeholder = "Frage stellen — Enter zum Senden",
+  mode,
+  modeLocked = false,
+  agentAvailable = false,
+  onModeSelect,
 }: {
   pending: boolean;
   onSubmit: (text: string) => void | Promise<void>;
   placeholder?: string;
+  /** current conversation mode; toggle hidden when undefined or agent unavailable */
+  mode?: ComposerMode;
+  modeLocked?: boolean;
+  agentAvailable?: boolean;
+  onModeSelect?: (mode: ComposerMode) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -122,14 +190,24 @@ export function ChatComposer({
             }
           }}
         />
-        <div className="flex items-center justify-between gap-2 pl-2">
-          <span className="text-[11px]" style={{ color: unsupportedHint ? "var(--color-warning)" : "var(--color-placeholder)" }}>
-            {unsupportedHint
-              ? "Diktat funktioniert nur in Chrome, Edge und Safari."
-              : recording
-              ? "Höre zu — sprich einfach drauflos…"
-              : "Enter zum Senden · Shift+Enter für neue Zeile"}
-          </span>
+        <div className="flex items-center justify-between gap-2 pl-2 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            {mode && agentAvailable && onModeSelect && (
+              <ModeToggle
+                mode={mode}
+                locked={modeLocked}
+                disabled={pending}
+                onSelect={onModeSelect}
+              />
+            )}
+            <span className="text-[11px] truncate" style={{ color: unsupportedHint ? "var(--color-warning)" : "var(--color-placeholder)" }}>
+              {unsupportedHint
+                ? "Diktat funktioniert nur in Chrome, Edge und Safari."
+                : recording
+                ? "Höre zu — sprich einfach drauflos…"
+                : "Enter zum Senden · Shift+Enter für neue Zeile"}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
