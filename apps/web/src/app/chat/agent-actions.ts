@@ -5,18 +5,13 @@
 // the provider-agnostic agent loop with limits + audit (agent_runs).
 
 import { revalidatePath } from "next/cache";
-<<<<<<< HEAD
 import { createUserClient, createServiceClient } from "@/lib/db/supabase-server";
-=======
-import { createUserClient } from "@/lib/db/supabase-server";
->>>>>>> origin/feature/cockpit-db-foundation
 import { requireOrgId, getMemberRole } from "@/lib/db/org-context";
 import { hybridSearch } from "@/lib/db/queries/search";
 import {
   buildSystemPrompt,
   buildContextBlock,
   generateChatTitle,
-<<<<<<< HEAD
   summarizeConversationAsAgentPrompt,
   type ChatResponse,
   type SavedAgentDraft,
@@ -25,14 +20,6 @@ import { runAgent } from "@/lib/ai/agent/runAgent";
 import { resolveAgentConfig } from "@/lib/ai/agent/config";
 import { AGENT_TOOLS, filterToolsForRole, roleSatisfies } from "@/lib/ai/agent/registry";
 import type { AgentMessage, AgentStep, MemberRole, PendingAction } from "@/lib/ai/agent/types";
-=======
-  type ChatResponse,
-} from "@/lib/ai/chat";
-import { runAgent } from "@/lib/ai/agent/runAgent";
-import { resolveAgentConfig } from "@/lib/ai/agent/config";
-import { AGENT_TOOLS } from "@/lib/ai/agent/registry";
-import type { AgentMessage, AgentStep, MemberRole } from "@/lib/ai/agent/types";
->>>>>>> origin/feature/cockpit-db-foundation
 import { checkAiQuota } from "@/lib/ai/quota";
 
 const AGENT_MAX_ROUNDS = 8;     // spec §12.3
@@ -40,7 +27,6 @@ const AGENT_TIMEOUT_MS = 60_000; // spec §12.3
 const RETRIEVAL_LIMIT = 8;       // light doc context — tools cover structured data
 const HISTORY_WINDOW = 10;
 
-<<<<<<< HEAD
 /** Write action awaiting UI confirmation — what the client needs to render the card. */
 export interface PendingConfirmation {
   runId:   string;
@@ -53,21 +39,13 @@ export interface AgentChatResponse {
   steps: AgentStep[];
   /** set when a write tool produced a preview — the UI must confirm/cancel (spec §12.2) */
   pendingAction?: PendingConfirmation;
-=======
-export interface AgentChatResponse {
-  response: ChatResponse;
-  steps: AgentStep[];
->>>>>>> origin/feature/cockpit-db-foundation
 }
 
 export async function sendAgentMessage(
   conversationId: string,
   question: string,
-<<<<<<< HEAD
   /** saved-agent linkage for the agent_runs audit trail (spec §9/§13) */
   opts?: { savedAgentId?: string },
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 ): Promise<AgentChatResponse> {
   const orgId = await requireOrgId();
   const db = await createUserClient();
@@ -148,10 +126,7 @@ export async function sendAgentMessage(
 
   let text: string;
   let steps: AgentStep[] = [];
-<<<<<<< HEAD
   let pendingAction: PendingConfirmation | undefined;
-=======
->>>>>>> origin/feature/cockpit-db-foundation
   try {
     const result = await runAgent({
       orgId,
@@ -163,16 +138,12 @@ export async function sendAgentMessage(
       maxRounds: AGENT_MAX_ROUNDS,
       timeoutMs: AGENT_TIMEOUT_MS,
       conversationId,
-<<<<<<< HEAD
       savedAgentId: opts?.savedAgentId,
-=======
->>>>>>> origin/feature/cockpit-db-foundation
     });
     if (!result) throw new Error("agent unavailable");
     text = result.text.trim() ||
       "Der Agent hat keine Antwort erzeugt. Bitte formuliere die Anfrage konkreter.";
     steps = result.steps;
-<<<<<<< HEAD
     // Without a persisted run row there is nothing to confirm against — the
     // preview text still shows, but no card (defensive, e.g. table missing).
     if (result.pendingAction && result.runId) {
@@ -182,8 +153,6 @@ export async function sendAgentMessage(
         preview: result.pendingAction.preview,
       };
     }
-=======
->>>>>>> origin/feature/cockpit-db-foundation
   } catch {
     text =
       "Der Agent konnte die Anfrage nicht abschließen. Bitte versuche es erneut — " +
@@ -220,7 +189,6 @@ export async function sendAgentMessage(
   }
 
   revalidatePath("/chat", "layout");
-<<<<<<< HEAD
   return { response, steps, pendingAction };
 }
 
@@ -581,7 +549,4 @@ export async function saveSavedAgent(input: SaveSavedAgentInput): Promise<string
 
   revalidatePath("/");
   return data.id as string;
-=======
-  return { response, steps };
->>>>>>> origin/feature/cockpit-db-foundation
 }

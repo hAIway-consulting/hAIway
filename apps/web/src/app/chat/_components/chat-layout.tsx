@@ -30,10 +30,7 @@ export default function ChatLayout(props: {
   isAdmin?: boolean;
   variant?: ChatVariant;
   agentAvailable?: boolean;
-<<<<<<< HEAD
   pendingConfirmation?: PendingConfirmation | null;
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const variant = props.variant ?? "default";
@@ -50,10 +47,7 @@ export default function ChatLayout(props: {
           onOpenDrawer={() => {}}
           variant="workspace"
           agentAvailable={props.agentAvailable ?? false}
-<<<<<<< HEAD
           pendingConfirmation={props.pendingConfirmation ?? null}
-=======
->>>>>>> origin/feature/cockpit-db-foundation
         />
       </main>
     );
@@ -110,10 +104,7 @@ export default function ChatLayout(props: {
           onOpenDrawer={() => setDrawerOpen(true)}
           variant="default"
           agentAvailable={props.agentAvailable ?? false}
-<<<<<<< HEAD
           pendingConfirmation={props.pendingConfirmation ?? null}
-=======
->>>>>>> origin/feature/cockpit-db-foundation
         />
       </main>
     </div>

@@ -5,21 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendMessage, createConversation } from "../actions";
 import { sendAgentMessage } from "../agent-actions";
-<<<<<<< HEAD
 import type { PendingConfirmation } from "../agent-actions";
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 import type { ConversationListItem, StoredMessage } from "../actions";
 import type { ChatResponse, ModelId } from "@/lib/ai/chat";
 import type { AgentStep } from "@/lib/ai/agent/types";
 import { card, badge, btn, input, styles } from "@/components/ui/table-classes";
 import RetrievalDebug from "./retrieval-debug";
 import { ChatComposer, ModeToggle } from "./chat-composer";
-<<<<<<< HEAD
 import SaveAgentDialog from "./save-agent-dialog";
 import AgentConfirmCard from "./agent-confirm-card";
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
 type ChatViewVariant = "default" | "workspace";
@@ -87,10 +81,7 @@ export default function ChatView({
   onOpenDrawer,
   variant = "default",
   agentAvailable = false,
-<<<<<<< HEAD
   pendingConfirmation = null,
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 }: {
   conversationId: string;
   conversation: ConversationListItem;
@@ -101,11 +92,8 @@ export default function ChatView({
   variant?: ChatViewVariant;
   /** agent_mode flag + provider availability (spec-cockpit.md §12.1/§15) */
   agentAvailable?: boolean;
-<<<<<<< HEAD
   /** open write confirmation reconstructed server-side after refresh (spec §12.2) */
   pendingConfirmation?: PendingConfirmation | null;
-=======
->>>>>>> origin/feature/cockpit-db-foundation
 }) {
   const isWorkspace = variant === "workspace";
   const mode = conversation.mode ?? "chat";
@@ -161,18 +149,6 @@ export default function ChatView({
     })();
   }
 
-  // Switching modes starts a NEW conversation (spec §12.4 — no mixed
-  // conversations). With no messages yet we still create a fresh one so the
-  // mode column is set correctly from the start.
-  function switchMode(next: "chat" | "agent") {
-    if (next === mode || pending) return;
-    void (async () => {
-      const id = await createConversation(next);
-      router.push(`/chat/${id}`);
-      router.refresh();
-    })();
-  }
-
   async function send(q: string) {
     if (!q || pending) return;
 
@@ -191,10 +167,7 @@ export default function ChatView({
         const agentResult = await sendAgentMessage(conversationId, q);
         response = agentResult.response;
         steps = agentResult.steps;
-<<<<<<< HEAD
         setConfirmation(agentResult.pendingAction ?? null);
-=======
->>>>>>> origin/feature/cockpit-db-foundation
       } else {
         response = await sendMessage(conversationId, q, selectedModel);
       }
@@ -268,7 +241,6 @@ export default function ChatView({
               Agent
             </span>
           )}
-<<<<<<< HEAD
           {canSaveAgent && (
             <button
               type="button"
@@ -279,8 +251,6 @@ export default function ChatView({
               Diesen Agenten speichern
             </button>
           )}
-=======
->>>>>>> origin/feature/cockpit-db-foundation
         </div>
       ) : (
         <div
@@ -312,7 +282,6 @@ export default function ChatView({
                 Agent
               </span>
             )}
-<<<<<<< HEAD
             {canSaveAgent && (
               <button
                 type="button"
@@ -323,8 +292,6 @@ export default function ChatView({
                 Diesen Agenten speichern
               </button>
             )}
-=======
->>>>>>> origin/feature/cockpit-db-foundation
           </div>
 
           {models.length > 0 && (
