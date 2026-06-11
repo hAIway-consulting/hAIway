@@ -33,6 +33,8 @@ export function WorkspaceShell({
 }: WorkspaceShellProps) {
   const displayName = branding?.displayName ?? "hAIway";
   const shortName = branding?.shortName ?? "HA";
+  // Custom-branded orgs without their own logo keep the shortName badge.
+  const logoUrl = branding ? branding.logoUrl : "/brand/logo-tile.png";
   const cleanedName = userName ? userName.replace(/^\[[^\]]+\]\s*/, "").trim() : null;
   const initials = cleanedName ? initialsOf(cleanedName) : "?";
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -65,12 +67,23 @@ export function WorkspaceShell({
             </button>
           )}
           <Link href="/" className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold gradient-accent shrink-0"
-              style={{ color: "var(--color-accent-text)" }}
-            >
-              {shortName}
-            </div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- tenant logo URLs can be external; next/image would require remotePatterns per host
+              <img
+                src={logoUrl}
+                alt={displayName}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-xl shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold gradient-accent shrink-0"
+                style={{ color: "var(--color-accent-text)" }}
+              >
+                {shortName}
+              </div>
+            )}
             <Wordmark
               name={displayName}
               className="text-[15px] font-semibold tracking-tight"

@@ -24,7 +24,7 @@ const DEFAULT_BRANDING: OrgBranding = {
   shortName: "HA",
   accentColor: "#0d9488",
   accentColorHover: "#0f766e",
-  logoUrl: null,
+  logoUrl: "/brand/logo-tile.png",
 };
 
 export async function getOrganization(): Promise<Organization | null> {
