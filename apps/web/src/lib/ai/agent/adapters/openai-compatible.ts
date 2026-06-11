@@ -28,6 +28,11 @@ export const openAICompatibleAdapter: AgentAdapter = {
     const steps: AgentStep[] = [];
     let usedTools = false;
     const maxRounds = opts.maxRounds ?? 5;
+    const tokenUsage = { in: 0, out: 0 };
+    const addUsage = (u?: { prompt_tokens?: number; completion_tokens?: number } | null) => {
+      tokenUsage.in += u?.prompt_tokens ?? 0;
+      tokenUsage.out += u?.completion_tokens ?? 0;
+    };
 
     for (let round = 0; round < maxRounds; round++) {
       const resp = await client.chat.completions.create({
@@ -36,11 +41,12 @@ export const openAICompatibleAdapter: AgentAdapter = {
         messages,
         tools,
       });
+      addUsage(resp.usage);
       const choice = resp.choices[0]?.message;
       const toolCalls = choice?.tool_calls ?? [];
 
       if (!choice || toolCalls.length === 0) {
-        return { text: choice?.content ?? "", steps, usedTools };
+        return { text: choice?.content ?? "", steps, usedTools, tokenUsage };
       }
 
       usedTools = true;
@@ -66,6 +72,7 @@ export const openAICompatibleAdapter: AgentAdapter = {
       max_tokens: 1500,
       messages,
     });
-    return { text: final.choices[0]?.message?.content ?? "", steps, usedTools };
+    addUsage(final.usage);
+    return { text: final.choices[0]?.message?.content ?? "", steps, usedTools, tokenUsage };
   },
 };

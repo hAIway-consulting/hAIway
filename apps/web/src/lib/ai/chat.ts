@@ -36,7 +36,14 @@ export type ChatResponse =
       model: ModelId;
       rewrittenQuery?: string;
       entityContext?: string;
+      /** token usage of the answering call (spec-cockpit.md §5.2) */
+      tokenUsage?: { in: number; out: number };
+      /** concrete SDK model id used (for the usage/pricing rollup) */
+      modelUsed?: string;
     };
+
+/** Context for fire-and-forget usage tracking of helper LLM calls. */
+export type UsageCtx = { orgId: string; userId?: string };
 
 const BASE_RULES = `Du bist der KI-Assistent dieser Organisation. Deine Aufgabe: Fragen ausschliesslich auf Basis der bereitgestellten Quellen beantworten.
 
@@ -145,6 +152,7 @@ export function buildContextBlock(chunks: ChunkSearchResult[]): string {
 export async function rewriteFollowUpQuery(
   question: string,
   history: ChatTurn[],
+  usageCtx?: UsageCtx,
 ): Promise<string> {
   if (history.length === 0) return question;
 
@@ -171,6 +179,8 @@ export async function rewriteFollowUpQuery(
       ],
     });
 
+    recordHelperUsage(message.usage, "claude-haiku-4-5-20251001", usageCtx);
+
     const text = message.content
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
@@ -181,6 +191,29 @@ export async function rewriteFollowUpQuery(
   } catch {
     return question;
   }
+}
+
+/**
+ * Track helper LLM calls (title, rewrite, expansion) under purpose "chat" —
+ * skipping them would systematically understate cost. Fire-and-forget.
+ */
+function recordHelperUsage(
+  usage: { input_tokens?: number; output_tokens?: number } | undefined,
+  model: string,
+  ctx?: UsageCtx,
+): void {
+  if (!ctx) return;
+  void import("@/lib/ai/usage").then(({ recordAiUsage, providerFromModel }) =>
+    recordAiUsage({
+      orgId:     ctx.orgId,
+      userId:    ctx.userId,
+      provider:  providerFromModel(model),
+      model,
+      purpose:   "chat",
+      tokensIn:  usage?.input_tokens ?? 0,
+      tokensOut: usage?.output_tokens ?? 0,
+    }),
+  );
 }
 
 /**
@@ -200,7 +233,7 @@ export async function rewriteFollowUpQuery(
 const EXPANSION_CACHE = new Map<string, { at: number; variants: string[] }>();
 const EXPANSION_TTL_MS = 5 * 60 * 1000;
 
-export async function expandQuery(question: string): Promise<string[]> {
+export async function expandQuery(question: string, usageCtx?: UsageCtx): Promise<string[]> {
   const trimmed = question.trim();
   if (!trimmed) return [];
 
@@ -238,6 +271,8 @@ Frage: "${trimmed}"`,
       ],
     });
 
+    recordHelperUsage(message.usage, "claude-haiku-4-5-20251001", usageCtx);
+
     const text = message.content
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
@@ -274,7 +309,10 @@ Frage: "${trimmed}"`,
   }
 }
 
-export async function generateChatTitle(firstQuestion: string): Promise<string> {
+export async function generateChatTitle(
+  firstQuestion: string,
+  usageCtx?: UsageCtx,
+): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return firstQuestion.slice(0, 60);
 
@@ -291,6 +329,7 @@ export async function generateChatTitle(firstQuestion: string): Promise<string> 
         },
       ],
     });
+    recordHelperUsage(message.usage, "claude-haiku-4-5-20251001", usageCtx);
     const text = message.content
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
@@ -302,31 +341,45 @@ export async function generateChatTitle(firstQuestion: string): Promise<string> 
   }
 }
 
+interface LlmCallResult {
+  text: string;
+  tokensIn: number;
+  tokensOut: number;
+  modelUsed: string;
+}
+
 async function callClaude(
   systemPrompt: string,
   messages: ChatTurn[],
-): Promise<string | null> {
+): Promise<LlmCallResult | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
   const { Anthropic } = await import("@anthropic-ai/sdk");
   const client = new Anthropic({ apiKey });
+  const model = "claude-sonnet-4-6";
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model,
     max_tokens: 1500,
     system: systemPrompt,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
   });
-  return message.content
+  const text = message.content
     .filter((b) => b.type === "text")
     .map((b) => (b as { type: "text"; text: string }).text)
     .join("");
+  return {
+    text,
+    tokensIn: message.usage?.input_tokens ?? 0,
+    tokensOut: message.usage?.output_tokens ?? 0,
+    modelUsed: model,
+  };
 }
 
 async function callOpenAI(
   systemPrompt: string,
   messages: ChatTurn[],
   model: "gpt-4o" | "gpt-4o-mini",
-): Promise<string | null> {
+): Promise<LlmCallResult | null> {
   const apiKey = getOpenAIKeyForChat();
   if (!apiKey) return null;
   const { OpenAI } = await import("openai");
@@ -339,7 +392,14 @@ async function callOpenAI(
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ],
   });
-  return response.choices[0]?.message?.content ?? null;
+  const text = response.choices[0]?.message?.content;
+  if (text == null) return null;
+  return {
+    text,
+    tokensIn: response.usage?.prompt_tokens ?? 0,
+    tokensOut: response.usage?.completion_tokens ?? 0,
+    modelUsed: model,
+  };
 }
 
 /**
@@ -384,6 +444,8 @@ async function tryAgentAnswer(p: {
       model:          modelId,
       rewrittenQuery: p.rewrittenQuery,
       entityContext:  p.entityContext,
+      tokenUsage:     result.tokenUsage,
+      modelUsed:      cfg.model,
     };
   } catch {
     return null;
@@ -447,20 +509,22 @@ export async function generateAnswer(params: {
   ];
 
   try {
-    const text =
+    const result =
       model === "claude"
         ? await callClaude(systemPrompt, turns)
         : await callOpenAI(systemPrompt, turns, model);
 
-    if (!text) return { type: "chunks", items: chunks };
+    if (!result || !result.text) return { type: "chunks", items: chunks };
 
     return {
       type: "answer",
-      text,
+      text: result.text,
       sources: chunks,
       model,
       rewrittenQuery,
       entityContext,
+      tokenUsage: { in: result.tokensIn, out: result.tokensOut },
+      modelUsed: result.modelUsed,
     };
   } catch {
     return { type: "chunks", items: chunks };

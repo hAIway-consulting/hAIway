@@ -29,10 +29,17 @@ export interface AgentStep {
   output: string; // stringified tool result (truncated)
 }
 
+export interface AgentTokenUsage {
+  in:  number;
+  out: number;
+}
+
 export interface AgentResult {
   text:     string;
   steps:    AgentStep[];
   usedTools: boolean;
+  /** summed across all rounds (incl. final no-tools call) */
+  tokenUsage: AgentTokenUsage;
 }
 
 export interface AgentRunOptions {

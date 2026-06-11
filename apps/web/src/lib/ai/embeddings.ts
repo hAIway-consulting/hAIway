@@ -8,7 +8,24 @@ const EMBED_MODEL = "text-embedding-3-small";
 // OpenAI accepts up to 2048 inputs per request; stay well below to leave headroom for token limits.
 const BATCH_SIZE = 96;
 
-export async function embedText(text: string): Promise<number[] | null> {
+// Usage rollup for embeddings (spec-cockpit.md §5.2). Fire-and-forget; the
+// Deno embed worker writes its own rows — this covers the Next-side calls
+// (query embeddings during chat/search).
+function recordEmbeddingUsage(orgId: string | undefined, promptTokens: number): void {
+  if (!orgId || promptTokens <= 0) return;
+  void import("@/lib/ai/usage").then(({ recordAiUsage }) =>
+    recordAiUsage({
+      orgId,
+      provider:  "openai",
+      model:     EMBED_MODEL,
+      purpose:   "embedding",
+      tokensIn:  promptTokens,
+      tokensOut: 0,
+    }),
+  );
+}
+
+export async function embedText(text: string, orgId?: string): Promise<number[] | null> {
   const apiKey = getOpenAIKey();
   if (!apiKey) return null;
 
@@ -19,6 +36,7 @@ export async function embedText(text: string): Promise<number[] | null> {
       model: EMBED_MODEL,
       input: text,
     });
+    recordEmbeddingUsage(orgId, response.usage?.prompt_tokens ?? 0);
     return response.data[0]?.embedding ?? null;
   } catch {
     return null;
@@ -29,7 +47,7 @@ export async function embedText(text: string): Promise<number[] | null> {
  * Batch-embed a list of texts. Returns an array aligned with the input;
  * slots are null when no API key is set or a batch fails.
  */
-export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> {
+export async function embedBatch(texts: string[], orgId?: string): Promise<(number[] | null)[]> {
   if (texts.length === 0) return [];
   const apiKey = getOpenAIKey();
   if (!apiKey) return texts.map(() => null);
@@ -45,6 +63,7 @@ export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> 
         model: EMBED_MODEL,
         input: slice,
       });
+      recordEmbeddingUsage(orgId, response.usage?.prompt_tokens ?? 0);
       for (let i = 0; i < slice.length; i++) {
         out[start + i] = response.data[i]?.embedding ?? null;
       }
