@@ -35,6 +35,9 @@ export const openAICompatibleAdapter: AgentAdapter = {
     };
 
     for (let round = 0; round < maxRounds; round++) {
+      // Deadline (spec-cockpit.md §12.3): break to the final no-tools call
+      // for a clean partial result instead of starting another round.
+      if (opts.deadline && Date.now() >= opts.deadline) break;
       const resp = await client.chat.completions.create({
         model:      opts.model,
         max_tokens: 1500,
@@ -46,7 +49,13 @@ export const openAICompatibleAdapter: AgentAdapter = {
       const toolCalls = choice?.tool_calls ?? [];
 
       if (!choice || toolCalls.length === 0) {
-        return { text: choice?.content ?? "", steps, usedTools, tokenUsage };
+        return {
+          text: choice?.content ?? "",
+          steps,
+          usedTools,
+          tokenUsage,
+          pendingAction: opts.runState?.pendingAction,
+        };
       }
 
       usedTools = true;
@@ -65,6 +74,10 @@ export const openAICompatibleAdapter: AgentAdapter = {
         steps.push({ tool: fn.name, input, output: output.slice(0, 2000) });
         messages.push({ role: "tool", tool_call_id: tc.id, content: output });
       }
+
+      // Write preview pending (spec §12.2): stop tool rounds — the final
+      // no-tools call below turns the preview into the user-facing text.
+      if (opts.runState?.pendingAction) break;
     }
 
     const final = await client.chat.completions.create({
@@ -73,6 +86,12 @@ export const openAICompatibleAdapter: AgentAdapter = {
       messages,
     });
     addUsage(final.usage);
-    return { text: final.choices[0]?.message?.content ?? "", steps, usedTools, tokenUsage };
+    return {
+      text: final.choices[0]?.message?.content ?? "",
+      steps,
+      usedTools,
+      tokenUsage,
+      pendingAction: opts.runState?.pendingAction,
+    };
   },
 };

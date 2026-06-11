@@ -4,10 +4,13 @@ import { countReadySources } from "@/lib/db/queries/sources";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
 import { listAutomations, type Automation } from "@/lib/db/queries/workflows";
+import { formatMinutesSaved, formatPerRunMinutes } from "@/lib/format-minutes";
 import { HeroAsk } from "./hero-ask";
 import { AgentTile } from "./agent-tile";
 import { STUB_AGENTS, type WorkspaceAgent } from "./agents";
 import { listVisibleSavedAgents } from "@/lib/db/queries/saved-agents";
+import { hasFeature } from "@/lib/features/flags";
+import { resolveAgentConfig } from "@/lib/ai/agent/config";
 
 function greeting(now = new Date()): string {
   const h = now.getHours();
@@ -56,9 +59,16 @@ export async function WorkspaceHome() {
 
   let automations: Automation[] = [];
   let agents: WorkspaceAgent[] = STUB_AGENTS;
+  let agentAvailable = false;
   try {
     const orgId = await requireOrgId();
     automations = await listAutomations(orgId);
+
+    const [agentFlag, agentCfg] = await Promise.all([
+      hasFeature("agent_mode").catch(() => false),
+      resolveAgentConfig(orgId).catch(() => ({ available: false })),
+    ]);
+    agentAvailable = agentFlag && agentCfg.available;
 
     // DB-backed saved agents (spec-cockpit.md §9); STUB_AGENTS stay as a
     // fallback until the foundation migration is pushed + seeded.
@@ -99,7 +109,10 @@ export async function WorkspaceHome() {
           </h1>
         </div>
 
-        <HeroAsk placeholder={'Frag mich etwas zu deinen Daten — z. B. „Welche Pilotkunden sind diese Woche aktiv?"'} />
+        <HeroAsk
+          placeholder={'Frag mich etwas zu deinen Daten — z. B. „Welche Pilotkunden sind diese Woche aktiv?"'}
+          agentAvailable={agentAvailable}
+        />
       </section>
 
       {/* ── Heute / Inbox ── */}
@@ -213,6 +226,14 @@ export async function WorkspaceHome() {
                     <span className="text-[14px] font-medium truncate" style={{ color: "var(--color-text)" }}>
                       {c.title || "Neuer Chat"}
                     </span>
+                    {c.mode === "agent" && (
+                      <span
+                        className="shrink-0 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+                      >
+                        Agent
+                      </span>
+                    )}
                   </span>
                   <span className="text-[11px] shrink-0" style={{ color: "var(--color-placeholder)" }}>
                     {relativeTime(c.last_message_at)}
@@ -271,6 +292,8 @@ function StatCard({
 function AutomationCard({ a }: { a: Automation }) {
   const rate = a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null;
   const handlungsbedarf = a.kpi.failed > 0;
+  // KPI v1 (spec-cockpit.md §10): saved time = per-run value × successful runs
+  const minutesSaved = a.minutesSavedPerRun * a.kpi.success;
   return (
     <Link
       href="/automatisierungen"
@@ -301,6 +324,12 @@ function AutomationCard({ a }: { a: Automation }) {
         <AutoStat label="Erfolg" value={rate == null ? "—" : `${rate}%`} tone="success" />
         <AutoStat label="Fehler" value={String(a.kpi.failed)} tone={handlungsbedarf ? "danger" : "default"} />
       </div>
+      {a.minutesSavedPerRun > 0 && (
+        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-success)" }}>
+          spart ~{formatPerRunMinutes(a.minutesSavedPerRun)} Min pro Lauf
+          {minutesSaved > 0 && <> · {formatMinutesSaved(minutesSaved)} gesamt</>}
+        </p>
+      )}
       {handlungsbedarf && (
         <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-danger)" }}>
           ⚠ {a.kpi.failed} {a.kpi.failed === 1 ? "Fall benötigt" : "Fälle benötigen"} Aufmerksamkeit.
