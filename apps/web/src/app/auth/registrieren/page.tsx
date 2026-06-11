@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/db/supabase-browser";
 
@@ -88,12 +89,13 @@ export default function RegisterPage() {
       style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)" }}
     >
       <div className="text-center mb-6">
-        <div
-          className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center text-base font-bold gradient-accent"
-          style={{ color: "var(--color-accent-text)" }}
-        >
-          TK
-        </div>
+        <Image
+          src="/brand/logo-tile.png"
+          alt="hAIway consulting"
+          width={48}
+          height={48}
+          className="w-12 h-12 rounded-xl mx-auto mb-3"
+        />
         <h1
           className="text-xl font-semibold"
           style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
