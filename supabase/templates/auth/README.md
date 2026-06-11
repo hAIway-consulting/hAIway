@@ -48,7 +48,7 @@ Client-State nötig, funktioniert cross-device.
 - Farben hart kodiert als Hex (keine CSS-Variablen — Mail-Clients ignorieren sie).
 - Akzentfarbe: `#0d9488` (Teal, light) / `#14b8a6` (teal-500, dark).
 - Dark-Mode per `@media (prefers-color-scheme: dark)` — greift in Apple Mail, Gmail iOS/Android, Outlook iOS. Outlook Desktop bleibt im Light-Mode (akzeptabel).
-- Kein externes Bild-Asset — Logo ist Text-Rendered in einer `<div>` mit Teal-Hintergrund.
+- Logo: `https://app.haiway-consulting.com/brand/email-logo.png` (Quelle: `apps/web/public/brand/email-logo.png`, 192×192 für 96px-Retina-Anzeige, schwarzer Hintergrund → funktioniert in Light & Dark identisch). Bei Logo-Änderung Asset ersetzen UND Templates erneut in Supabase einspielen.
 - Footer enthält Impressum-Link + Absender-Hinweis.
 
 ## Checkliste nach Template-Änderungen
