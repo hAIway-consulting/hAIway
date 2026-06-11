@@ -4,7 +4,7 @@ import {
   IconHome,
   IconUsers,
   IconChart,
-  IconBuilding,
+  IconChat,
   IconPlug,
   IconAdmin,
   IconBox,
@@ -16,19 +16,27 @@ import {
 } from "./nav-primitives";
 
 /**
- * HAIway-internes Sidebar — Platform-Admin (profiles.is_platform_admin=true).
- * Operatives + strategisches Cockpit für unser Team. Gruppen:
+ * HAIway-internes Sidebar — Platform-Admin (Flag oder owner/admin der
+ * Plattform-Org). Operatives + strategisches Cockpit für unser Team. Gruppen:
  *  - Mission Control (Status + Plattform-Health)
  *  - Kunden (Pilotkunden)
+ *  - Berater (eigener Arbeitsbereich — Cockpit + Automatisierungen)
  *  - Bibliothek (cross-tenant Automatisierungen + Skills, admin spec §3/§4)
  *  - Plattform (Integrationen, KI-Settings, AI-Keys, AI-Kosten, Retrieval)
+ *
+ * "Mein Unternehmen" lebt nicht mehr unter Kunden — Organisationseinstellungen
+ * öffnen sich über das Profil-Dropdown in der Top-Bar (/organisation).
  */
 const groups: NavGroup[] = [
   {
     label: "Kunden",
+    items: [{ href: "/admin/kunden", label: "Kundenliste", icon: IconUsers }],
+  },
+  {
+    label: "Berater",
     items: [
-      { href: "/admin/kunden", label: "Kundenliste", icon: IconUsers },
-      { href: "/admin/mein-unternehmen", label: "Mein Unternehmen", icon: IconBuilding },
+      { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
+      { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
     ],
   },
   {

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { isPlatformAdmin } from "@/lib/db/queries/organization";
-import { getMemberRole } from "@/lib/db/org-context";
+import { BERATER_ROLES, getMemberRole } from "@/lib/db/org-context";
 
 /**
  * /admin/* — Pages, die HAIway-internes Dashboard heute halten und parallel
  * vom Berater-Cockpit als Sub-Seiten genutzt werden (Integrationen,
- * Retrieval-Qualität, Branding, …). Gate auf Platform-Admin ODER Berater
- * (`role IN ('admin','owner')`); End-User landen auf /.
+ * Retrieval-Qualität, Branding, …). Gate auf Platform-Admin ODER Berater-Persona
+ * (`role IN BERATER_ROLES`); End-User landen auf /.
  *
  * Layout selbst rendert nur das Gate. Die Top-Bar + Tabs kommen aus dem
  * Root-Layout über die Persona-spezifische `WorkspaceShell`-Variante; ein
@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     isPlatformAdmin().catch(() => false),
     getMemberRole().catch(() => null),
   ]);
-  if (!admin && role !== "admin" && role !== "owner") {
+  if (!admin && (!role || !BERATER_ROLES.includes(role))) {
     redirect("/");
   }
 

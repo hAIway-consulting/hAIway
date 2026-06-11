@@ -6,6 +6,7 @@ export type AdminOrg = {
   name: string;
   status: string;
   plan_id: string | null;
+  is_platform: boolean;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -322,6 +323,16 @@ export async function updateOrgIntegrationStatus(
 }
 
 // ─── EXISTING ────────────────────────────────────────────────────────────
+
+export async function updateOrgMemberRole(orgId: string, memberId: string, role: string) {
+  const db = createServiceClient();
+  const { error } = await db
+    .from("organization_members")
+    .update({ role })
+    .eq("id", memberId)
+    .eq("organization_id", orgId);
+  if (error) throw new Error(error.message);
+}
 
 export async function inviteUserToOrg(orgId: string, email: string, role: string = "member") {
   const db = createServiceClient();

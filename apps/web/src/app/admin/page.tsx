@@ -17,7 +17,7 @@ export default async function AdminDashboard() {
       {/* Mein Unternehmen */}
       {platformOrg && (
         <Link
-          href="/admin/mein-unternehmen"
+          href="/organisation"
           className="rounded-xl p-5 flex items-center justify-between"
           style={{
             background: "var(--color-accent-soft)",
