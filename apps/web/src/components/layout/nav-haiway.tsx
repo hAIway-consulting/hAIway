@@ -7,6 +7,9 @@ import {
   IconBuilding,
   IconPlug,
   IconAdmin,
+  IconBox,
+  IconSources,
+  IconShield,
   NavLink,
   NavGroupBlock,
   type NavGroup,
@@ -17,7 +20,8 @@ import {
  * Operatives + strategisches Cockpit für unser Team. Gruppen:
  *  - Mission Control (Status + Plattform-Health)
  *  - Kunden (Pilotkunden)
- *  - Plattform (Integrationen, KI-Settings, Retrieval)
+ *  - Bibliothek (cross-tenant Automatisierungen + Skills, admin spec §3/§4)
+ *  - Plattform (Integrationen, KI-Settings, AI-Keys, AI-Kosten, Retrieval)
  */
 const groups: NavGroup[] = [
   {
@@ -28,11 +32,20 @@ const groups: NavGroup[] = [
     ],
   },
   {
+    label: "Bibliothek",
+    items: [
+      { href: "/admin/bibliothek/automatisierungen", label: "Automatisierungen", icon: IconBox },
+      { href: "/admin/bibliothek/skills", label: "Skills", icon: IconSources },
+    ],
+  },
+  {
     label: "Plattform",
     items: [
       { href: "/admin/daten", label: "Datenpools", icon: IconPlug },
       { href: "/admin/integrationen", label: "Datenquellen + Sync", icon: IconPlug },
       { href: "/admin/ai-settings", label: "Chat-Verhalten", icon: IconAdmin },
+      { href: "/admin/ai-keys", label: "AI-Keys", icon: IconShield },
+      { href: "/admin/ai-kosten", label: "AI-Kosten", icon: IconChart },
       { href: "/admin/retrieval-qualitaet", label: "Retrieval-Qualität", icon: IconChart },
     ],
   },
