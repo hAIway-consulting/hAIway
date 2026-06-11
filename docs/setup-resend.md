@@ -1,23 +1,22 @@
 # Resend + Supabase Auth — Setup-Anleitung
 
-Schritte, damit gebrandete Login-/Invite-Mails aus TimeKeeper verschickt werden. Absender-Domain: `timekeeper.bernwald.net`.
+Schritte, damit gebrandete Login-/Invite-Mails aus TimeKeeper verschickt werden. Absender-Domain: `app.haiway-consulting.com`.
 
 ## 1. Resend-Konto und Domain
 
 1. Account anlegen auf https://resend.com (falls noch nicht vorhanden).
-2. **Domains → Add Domain** → `timekeeper.bernwald.net` eintragen → Region wählen (EU, Frankfurt).
-3. Resend zeigt DNS-Records an, die bei dem Provider von `bernwald.net` einzutragen sind:
-   - **TXT** (`_resend.timekeeper`) — Domain-Ownership
-   - **MX** (`timekeeper.bernwald.net`) — Receive bounces
-   - **TXT** SPF — z. B. `"v=spf1 include:amazonses.com ~all"`
-   - **CNAME** DKIM — `resend._domainkey.timekeeper`
-   - Optional **TXT** DMARC auf der Root-Domain (`_dmarc.bernwald.net`, `p=none`)
+2. **Domains → Add Domain** → `app.haiway-consulting.com` eintragen → Region wählen (EU, Frankfurt).
+3. Resend zeigt DNS-Records an, die im Cloudflare-DNS von `haiway-consulting.com` einzutragen sind:
+   - **MX** (`send.app`) — Receive bounces
+   - **TXT** SPF (`send.app`) — z. B. `"v=spf1 include:amazonses.com ~all"`
+   - **TXT** DKIM — `resend._domainkey.app`
+   - Optional **TXT** DMARC auf der Root-Domain (`_dmarc.haiway-consulting.com`, `p=none`)
 4. Nach DNS-Propagation (meist < 15 min) in Resend auf **Verify** klicken.
 
 ## 2. Resend-API-Key erstellen
 
 1. Resend Dashboard → **API Keys** → **Create API Key**.
-2. Name: `timekeeper-supabase-smtp`. Permission: **Sending access**. Domain: `timekeeper.bernwald.net`.
+2. Name: `timekeeper-supabase-smtp`. Permission: **Sending access**. Domain: `app.haiway-consulting.com`.
 3. Key kopieren (wird nur einmal angezeigt). Nirgends ins Repo einchecken.
 
 ## 3. Supabase SMTP einrichten
@@ -26,15 +25,15 @@ Supabase Dashboard → Project → **Project Settings** → **Authentication** �
 
 | Feld | Wert |
 |---|---|
-| Sender email | `noreply@timekeeper.bernwald.net` |
-| Sender name | `TimeKeeper` |
+| Sender email | `noreply@app.haiway-consulting.com` |
+| Sender name | `hAIway consulting` |
 | Host | `smtp.resend.com` |
 | Port | `465` |
 | Minimum interval | `60` (Sekunden — Standard) |
 | Username | `resend` |
 | Password | *(Resend-API-Key aus Schritt 2)* |
 
-Speichern. Danach **Send Test Email** (unten auf derselben Seite) an deine eigene Adresse — die Mail sollte mit `From: TimeKeeper <noreply@timekeeper.bernwald.net>` ankommen.
+Speichern. Danach **Send Test Email** (unten auf derselben Seite) an deine eigene Adresse — die Mail sollte mit `From: TimeKeeper <noreply@app.haiway-consulting.com>` ankommen.
 
 ## 4. E-Mail-Templates importieren
 
@@ -42,10 +41,10 @@ Für jedes Template in `supabase/templates/auth/` denselben Schritt:
 
 1. Supabase Dashboard → **Authentication** → **Email Templates** → entsprechenden Typ öffnen.
 2. **Subject** setzen (Vorgabe im HTML-Kommentar oben):
-   - Magic Link → `Ihr Anmelde-Link für TimeKeeper`
-   - Invite user → `Sie wurden zu TimeKeeper eingeladen`
-   - Confirm signup → `Bestätigen Sie Ihr TimeKeeper-Konto`
-   - Reset password → `TimeKeeper: Passwort zurücksetzen`
+   - Magic Link → `Ihr Anmelde-Link für hAIway consulting`
+   - Invite user → `Sie wurden zu hAIway consulting eingeladen`
+   - Confirm signup → `Bestätigen Sie Ihr Konto bei hAIway consulting`
+   - Reset password → `hAIway consulting: Passwort zurücksetzen`
 3. **Message (HTML)**: komplett durch den Inhalt der entsprechenden `.html`-Datei ersetzen.
 4. Speichern → **Send Test Email** zur Prüfung.
 

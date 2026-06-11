@@ -1,5 +1,63 @@
 project_id = "atguaothhmndqofrlaux"
 
+# ACHTUNG: `supabase config push` setzt JEDES hier nicht gesetzte [auth]-Feld
+# auf den CLI-Default zurück (inkl. site_url und Redirect-Whitelist). Die
+# folgenden Werte spiegeln deshalb den Remote-Produktionsstand — vor einem
+# Push immer den angezeigten Diff prüfen.
+[auth]
+site_url = "https://app.haiway-consulting.com"
+additional_redirect_urls = [
+  "https://time-keeper-thomas-3505s-projects.vercel.app/",
+  "https://time-keeper-thomas-3505s-projects.vercel.app/**",
+  "https://time-*-keeper-thomas-3505s-projects.vercel.app",
+  "https://time-*-keeper-thomas-3505s-projects.vercel.app/**",
+  "https://time-keeper-thomas-3505-thomas-3505s-projects.vercel.app/",
+  "https://time-keeper-thomas-3505-thomas-3505s-projects.vercel.app/**",
+  "https://time-*-keeper-thomas-3505-thomas-3505s-projects.vercel.app",
+  "https://time-*-keeper-thomas-3505-thomas-3505s-projects.vercel.app/**",
+  "http://localhost:3000/**",
+  "http://localhost:3000",
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/confirm",
+  "https://haiway-haiway.vercel.app/",
+  "https://haiway-haiway.vercel.app/**",
+  "https://haiway-*-haiway.vercel.app",
+  "https://haiway-*-haiway.vercel.app/**",
+  "https://haiway-haiway-consulting-haiway.vercel.app/",
+  "https://haiway-haiway-consulting-haiway.vercel.app/**",
+  "https://haiway-*-haiway-consulting-haiway.vercel.app",
+  "https://haiway-*-haiway-consulting-haiway.vercel.app/**",
+  "https://app.haiway-consulting.com",
+  "https://app.haiway-consulting.com/**",
+]
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+# Auth-E-Mail-Templates: Quelle der Wahrheit sind die versionierten Dateien
+# unter supabase/templates/auth/.
+[auth.email.template.magic_link]
+subject = "Ihr Anmelde-Link für hAIway consulting"
+content_path = "./supabase/templates/auth/magic-link.html"
+
+[auth.email.template.invite]
+subject = "Sie wurden zu hAIway consulting eingeladen"
+content_path = "./supabase/templates/auth/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Bestätigen Sie Ihr Konto bei hAIway consulting"
+content_path = "./supabase/templates/auth/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "hAIway consulting: Passwort zurücksetzen"
+content_path = "./supabase/templates/auth/reset-password.html"
+
 [functions.phone-assistant-rag]
 verify_jwt = false
 
