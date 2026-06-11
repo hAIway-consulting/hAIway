@@ -5,6 +5,7 @@ import {
   IconSources,
   IconShield,
   IconChart,
+  IconChat,
   IconPlug,
   IconPhone,
   IconBuilding,
@@ -30,6 +31,7 @@ export function NavBerater({ hasPhoneAssistant }: { hasPhoneAssistant?: boolean 
     {
       label: "Outcome",
       items: [
+        { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
         { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
         { href: "/admin/retrieval-qualitaet", label: "KPIs", icon: IconChart },
       ],

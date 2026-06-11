@@ -62,3 +62,31 @@ export async function listVisibleSavedAgents(orgId: string): Promise<SavedAgent[
     return [];
   }
 }
+
+export interface SavedAgentOversight extends SavedAgent {
+  createdAt: string;
+}
+
+/**
+ * Berater oversight (berater spec §6): ALL saved agents of the org including
+ * private and disabled ones. Still user-client — the saved_agents SELECT
+ * policy grants org admins (Berater) read on private agents; a plain member
+ * calling this would only see own + org-wide rows.
+ */
+export async function listAllSavedAgentsForOrg(orgId: string): Promise<SavedAgentOversight[]> {
+  try {
+    const db = await createUserClient();
+    const { data, error } = await db
+      .from("saved_agents")
+      .select("id, name, description, prompt, visibility, status, created_by, ui, created_at")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error || !data) return [];
+    return (data as (SavedAgentRow & { created_at: string })[]).map((row) => ({
+      ...mapRow(row),
+      createdAt: row.created_at,
+    }));
+  } catch {
+    return [];
+  }
+}
