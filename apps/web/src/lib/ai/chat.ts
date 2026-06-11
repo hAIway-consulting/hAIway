@@ -337,6 +337,117 @@ export async function generateChatTitle(
   }
 }
 
+// ── Saved-agent summarizer (spec-cockpit.md §9) ─────────────────────────
+
+export type SavedAgentDraft = {
+  name: string;
+  description: string;
+  prompt: string;
+};
+
+const DRAFT_NAME_MAX = 40;
+const DRAFT_DESCRIPTION_MAX = 100;
+const DRAFT_PROMPT_MAX = 4000;
+// Keep the summarizer input bounded — long conversations get clipped per
+// turn and to the most recent turns; the recurring task survives clipping.
+const DRAFT_TURNS_MAX = 20;
+const DRAFT_TURN_CHARS_MAX = 2000;
+
+/** Deterministic draft from the user turns — used whenever the LLM path fails. */
+function fallbackAgentDraft(history: ChatTurn[]): SavedAgentDraft {
+  const userTurns = history
+    .filter((t) => t.role === "user")
+    .map((t) => t.content.trim())
+    .filter((t) => t.length > 0);
+  return {
+    name: (userTurns[0] ?? "").slice(0, DRAFT_NAME_MAX),
+    description: "",
+    prompt: userTurns.join("\n\n").slice(0, DRAFT_PROMPT_MAX),
+  };
+}
+
+/**
+ * Summarize a conversation's recurring task into a reusable saved-agent
+ * draft (spec-cockpit.md §9). Uses Claude Haiku like the other helper calls.
+ * The result is ALWAYS shown to the user for review before saving — this
+ * only produces the editable proposal. Degrades to a deterministic draft
+ * built from the user turns when no key is set or parsing fails.
+ */
+export async function summarizeConversationAsAgentPrompt(
+  history: ChatTurn[],
+  usageCtx?: UsageCtx,
+): Promise<SavedAgentDraft> {
+  const fallback = fallbackAgentDraft(history);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return fallback;
+
+  try {
+    const { Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey });
+
+    const transcript = history
+      .slice(-DRAFT_TURNS_MAX)
+      .map(
+        (t) =>
+          `${t.role === "user" ? "Nutzer" : "Assistent"}: ${t.content.slice(0, DRAFT_TURN_CHARS_MAX)}`,
+      )
+      .join("\n\n");
+
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1200,
+      messages: [
+        {
+          role: "user",
+          content: `Analysiere den folgenden Gespraechsverlauf zwischen einem Nutzer und einem KI-Agenten. Fasse die wiederkehrende Taetigkeit, die der Nutzer erledigt haben moechte, als wiederverwendbaren Agenten-Prompt zusammen. Der Prompt muss so formuliert sein, dass ein Agent die Aufgabe kuenftig OHNE den urspruenglichen Verlauf ausfuehren kann: Arbeitsauftrag, Vorgehen, benoetigte Rueckfragen an den Nutzer, gewuenschtes Ergebnisformat.
+
+Antworte NUR mit einem JSON-Objekt, ohne Markdown, ohne Einleitung, exakt in dieser Form:
+{"name": "...", "description": "...", "prompt": "..."}
+
+Regeln:
+- "name": praegnanter deutscher Titel, maximal ${DRAFT_NAME_MAX} Zeichen
+- "description": ein deutscher Satz, maximal ${DRAFT_DESCRIPTION_MAX} Zeichen
+- "prompt": deutscher Agenten-Prompt, maximal ${DRAFT_PROMPT_MAX} Zeichen
+
+Gespraechsverlauf:
+
+${transcript}`,
+        },
+      ],
+    });
+
+    recordHelperUsage(message.usage, "claude-haiku-4-5-20251001", usageCtx);
+
+    const text = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
+      .trim();
+
+    // Accept clean JSON or output wrapped in ``` fences / prose.
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return fallback;
+
+    const parsed: unknown = JSON.parse(jsonMatch[0]);
+    if (typeof parsed !== "object" || parsed === null) return fallback;
+    const draft = parsed as Record<string, unknown>;
+    const name = typeof draft.name === "string" ? draft.name.trim() : "";
+    const description =
+      typeof draft.description === "string" ? draft.description.trim() : "";
+    const prompt = typeof draft.prompt === "string" ? draft.prompt.trim() : "";
+    if (!name || !prompt) return fallback;
+
+    return {
+      name: name.slice(0, DRAFT_NAME_MAX),
+      description: description.slice(0, DRAFT_DESCRIPTION_MAX),
+      prompt: prompt.slice(0, DRAFT_PROMPT_MAX),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 interface LlmCallResult {
   text: string;
   tokensIn: number;

@@ -11,6 +11,7 @@ import type { AgentStep } from "@/lib/ai/agent/types";
 import { card, badge, btn, input, styles } from "@/components/ui/table-classes";
 import RetrievalDebug from "./retrieval-debug";
 import { ChatComposer, ModeToggle } from "./chat-composer";
+import SaveAgentDialog from "./save-agent-dialog";
 
 type ModelOption = { id: ModelId; label: string; available: boolean };
 type ChatViewVariant = "default" | "workspace";
@@ -103,7 +104,13 @@ export default function ChatView({
       models.find((m) => m.available)?.id ??
       "claude",
   );
+  const [saveAgentOpen, setSaveAgentOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Save button only after at least one completed exchange (spec §9) —
+  // pending placeholders do not count.
+  const canSaveAgent =
+    isAgent && messages.filter((m) => !m.pending).length >= 2;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -222,6 +229,16 @@ export default function ChatView({
               Agent
             </span>
           )}
+          {canSaveAgent && (
+            <button
+              type="button"
+              onClick={() => setSaveAgentOpen(true)}
+              className="shrink-0 inline-flex items-center justify-center px-3 min-h-[44px] rounded-full text-xs font-medium transition-all hover:shadow-[var(--shadow-xs)] active:scale-[0.97]"
+              style={styles.accentSoft}
+            >
+              Diesen Agenten speichern
+            </button>
+          )}
         </div>
       ) : (
         <div
@@ -252,6 +269,16 @@ export default function ChatView({
               <span className={badge.pill} style={styles.accentSoft}>
                 Agent
               </span>
+            )}
+            {canSaveAgent && (
+              <button
+                type="button"
+                onClick={() => setSaveAgentOpen(true)}
+                className="shrink-0 inline-flex items-center justify-center px-3 min-h-[44px] rounded-full text-xs font-medium transition-all hover:shadow-[var(--shadow-xs)] active:scale-[0.97]"
+                style={styles.accentSoft}
+              >
+                Diesen Agenten speichern
+              </button>
             )}
           </div>
 
@@ -489,6 +516,13 @@ export default function ChatView({
             </button>
           </form>
         </div>
+      )}
+
+      {saveAgentOpen && (
+        <SaveAgentDialog
+          conversationId={conversationId}
+          onClose={() => setSaveAgentOpen(false)}
+        />
       )}
     </div>
   );

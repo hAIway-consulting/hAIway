@@ -12,7 +12,9 @@ import {
   buildSystemPrompt,
   buildContextBlock,
   generateChatTitle,
+  summarizeConversationAsAgentPrompt,
   type ChatResponse,
+  type SavedAgentDraft,
 } from "@/lib/ai/chat";
 import { runAgent } from "@/lib/ai/agent/runAgent";
 import { resolveAgentConfig } from "@/lib/ai/agent/config";
@@ -33,6 +35,8 @@ export interface AgentChatResponse {
 export async function sendAgentMessage(
   conversationId: string,
   question: string,
+  /** saved-agent linkage for the agent_runs audit trail (spec §9/§13) */
+  opts?: { savedAgentId?: string },
 ): Promise<AgentChatResponse> {
   const orgId = await requireOrgId();
   const db = await createUserClient();
@@ -124,6 +128,7 @@ export async function sendAgentMessage(
       maxRounds: AGENT_MAX_ROUNDS,
       timeoutMs: AGENT_TIMEOUT_MS,
       conversationId,
+      savedAgentId: opts?.savedAgentId,
     });
     if (!result) throw new Error("agent unavailable");
     text = result.text.trim() ||
@@ -166,4 +171,95 @@ export async function sendAgentMessage(
 
   revalidatePath("/chat", "layout");
   return { response, steps };
+}
+
+// ── Saved agents (spec-cockpit.md §9) ────────────────────────────────────
+
+/**
+ * Summarize the conversation into an editable saved-agent draft. The draft
+ * is ALWAYS shown to the user for review — saveSavedAgent only runs after
+ * the user confirmed/edited it (review instead of blackbox, spec §9).
+ */
+export async function proposeSavedAgent(
+  conversationId: string,
+): Promise<SavedAgentDraft> {
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const { data: { user } } = await db.auth.getUser();
+
+  const { data: rows } = await db
+    .from("chat_messages")
+    .select("role, content")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  const history = (rows ?? []).filter(
+    (m): m is { role: "user" | "assistant"; content: string } =>
+      m.role === "user" || m.role === "assistant",
+  );
+
+  if (history.length < 2) {
+    throw new Error(
+      "Zum Speichern braucht der Agent mindestens einen abgeschlossenen Auftrag (Frage und Antwort).",
+    );
+  }
+
+  return summarizeConversationAsAgentPrompt(history, { orgId, userId: user?.id });
+}
+
+export interface SaveSavedAgentInput {
+  name: string;
+  description: string;
+  prompt: string;
+  visibility: "private" | "org";
+  sourceConversationId?: string;
+}
+
+/**
+ * Persist the reviewed draft as a saved agent. Insert runs through the user
+ * client — RLS enforces org membership and created_by = auth.uid().
+ */
+export async function saveSavedAgent(input: SaveSavedAgentInput): Promise<string> {
+  const orgId = await requireOrgId();
+  const db = await createUserClient();
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) throw new Error("Nicht angemeldet.");
+
+  const name = (input.name ?? "").trim();
+  const description = (input.description ?? "").trim();
+  const prompt = (input.prompt ?? "").trim();
+  const visibility = input.visibility;
+
+  if (name.length < 1 || name.length > 80) {
+    throw new Error("Der Name muss zwischen 1 und 80 Zeichen lang sein.");
+  }
+  if (prompt.length < 1 || prompt.length > 4000) {
+    throw new Error("Der Prompt muss zwischen 1 und 4000 Zeichen lang sein.");
+  }
+  if (visibility !== "private" && visibility !== "org") {
+    throw new Error("Ungültige Sichtbarkeit.");
+  }
+
+  const { data, error } = await db
+    .from("saved_agents")
+    .insert({
+      organization_id: orgId,
+      name,
+      description,
+      prompt,
+      created_by: user.id,
+      visibility,
+      source_conversation_id: input.sourceConversationId ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(
+      "Der Agent konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    );
+  }
+
+  revalidatePath("/");
+  return data.id as string;
 }
