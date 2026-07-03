@@ -36,7 +36,10 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Auth via Claude Pro/Max subscription (OAuth token), not pay-as-you-go
+          # API credits. Generate locally with `claude setup-token` and store the
+          # result in the CLAUDE_CODE_OAUTH_TOKEN repo secret.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # No `prompt` -> interactive mode: Claude responds to @claude mentions
           # and acts on the issue / comment context.
           claude_args: |
