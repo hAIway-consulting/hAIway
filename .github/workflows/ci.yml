@@ -4,7 +4,10 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    # Also run on claude/** pushes: a PR opened by auto-pr.yml via GITHUB_TOKEN
+    # does not fire pull_request checks, so we attach the checks to the branch
+    # commit here — they then show up on the PR via its head SHA.
+    branches: [main, 'claude/**']
 
 permissions:
   contents: read

@@ -1,0 +1,39 @@
+name: Auto PR for Claude branches
+
+# When the Claude Code action pushes a claude/** branch it only prints a
+# "Create PR" link — it does not open the PR. This workflow opens one
+# automatically on every push to such a branch (once), so the agent loop
+# ends in a real, mergeable PR instead of a dangling branch.
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    # Skip branch-deletion pushes.
+    if: ${{ github.event.deleted == false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Open PR if none exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          existing="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')"
+          if [ -n "$existing" ]; then
+            echo "Open PR #$existing already exists for $BRANCH — nothing to do."
+            exit 0
+          fi
+          # --fill uses the branch's commit(s) for title/body.
+          gh pr create --base main --head "$BRANCH" --fill
