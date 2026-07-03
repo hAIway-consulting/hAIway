@@ -116,15 +116,46 @@ async function updateRun(runId: string, fields: Record<string, unknown>): Promis
   if (error) throw error;
 }
 
+// Event runs reference their raw_events row via trigger_ref. Load the raw
+// payload so steps (e.g. llm_classify prompts) can access it under
+// {{trigger.payload.*}}.
+async function loadTriggerPayload(
+  orgId: string,
+  triggerRef: Record<string, unknown>,
+): Promise<Record<string, unknown> | null> {
+  const { provider_id, external_id, payload_hash } = triggerRef as {
+    provider_id?: string; external_id?: string; payload_hash?: string;
+  };
+  if (!provider_id || !external_id || !payload_hash) return null;
+
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("raw_events")
+    .select("payload")
+    .eq("organization_id", orgId)
+    .eq("provider_id", provider_id)
+    .eq("external_id", external_id)
+    .eq("payload_hash", payload_hash)
+    .order("fetched_at", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return (data?.[0]?.payload as Record<string, unknown>) ?? null;
+}
+
 // Executes the run until it finishes, pauses for approval, or a step throws.
 async function processRun(run: RunRow): Promise<void> {
   const supabase = getServiceClient();
   const definition = await loadDefinition(run.template_id, run.template_version);
   const params = await loadOrgParams(run.org_automation_id);
   const succeeded = await loadSucceededStepKeys(run.id);
+  const payload = await loadTriggerPayload(run.organization_id, run.trigger_ref ?? {});
 
   const context = { ...(run.context ?? {}) };
-  const scope: RunScope = { params, context, trigger: run.trigger_ref ?? {} };
+  const scope: RunScope = {
+    params,
+    context,
+    trigger: { ...(run.trigger_ref ?? {}), payload },
+  };
 
   if (run.status === "pending") {
     await updateRun(run.id, { status: "running" });

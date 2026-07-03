@@ -1,0 +1,85 @@
+{
+  "$comment": "Outcome-Template: Shopware-Reklamation. Prompts referenced as @prompts/<file>.md are inlined by scripts/customers/sync-customer.mts before upload. $meta feeds the automation_templates registry row and is stripped from the stored definition.",
+  "$meta": {
+    "name": "Shopware Reklamation",
+    "description": "Eingehende Reklamations-Mails klassifizieren, Bestellung laden, Retoure nach Berater-Freigabe anlegen, Team via Trello informieren.",
+    "required_providers": ["shopware", "trello", "inbound_mail_webhook"],
+    "feature_key": "automations"
+  },
+  "trigger": {
+    "type": "event",
+    "provider_id": "inbound_mail_webhook",
+    "entity_type": "inbound_mail"
+  },
+  "params_schema": {
+    "required": ["trello_list_id"],
+    "fields": {
+      "trello_list_id": {
+        "type": "string",
+        "label": "Trello-Liste für Vorgänge",
+        "help": "ID der Liste, in der neue Reklamations-Karten landen"
+      },
+      "return_reason_default": {
+        "type": "string",
+        "label": "Standard-Retourengrund",
+        "default": "Kundenreklamation"
+      }
+    }
+  },
+  "steps": [
+    {
+      "key": "classify",
+      "kind": "llm_classify",
+      "name": "E-Mail klassifizieren",
+      "prompt": "@prompts/classify.md",
+      "output_schema": {
+        "intent": "reklamation | support | other",
+        "order_number": "string | null",
+        "customer_email": "string | null",
+        "summary": "string"
+      }
+    },
+    {
+      "key": "fetch_order",
+      "kind": "connector_action",
+      "name": "Bestellung laden",
+      "when": { "path": "context.classify.intent", "equals": "reklamation" },
+      "provider": "shopware",
+      "action": "fetch-order",
+      "params": {
+        "order_number": "{{context.classify.order_number}}"
+      }
+    },
+    {
+      "key": "approval",
+      "kind": "human_approval",
+      "name": "Retoure freigeben",
+      "when": { "path": "context.fetch_order.order.id", "exists": true },
+      "title": "Retoure für Bestellung {{context.classify.order_number}} freigeben?",
+      "description": "Eingegangene Reklamation: {{context.classify.summary}}"
+    },
+    {
+      "key": "create_return",
+      "kind": "connector_action",
+      "name": "Retoure anlegen",
+      "when": { "path": "context.fetch_order.order.id", "exists": true },
+      "provider": "shopware",
+      "action": "create-return",
+      "params": {
+        "order_id": "{{context.fetch_order.order.id}}",
+        "reason": "{{params.return_reason_default}}",
+        "internal_comment": "{{context.classify.summary}}"
+      }
+    },
+    {
+      "key": "notify",
+      "kind": "notify",
+      "name": "Team informieren",
+      "channel": "trello",
+      "message": "Reklamation bearbeitet: Bestellung {{context.classify.order_number}}\n\n{{context.classify.summary}}\n\nRetoure angelegt: {{context.create_return.return.id}}",
+      "params": {
+        "list_id": "{{params.trello_list_id}}"
+      }
+    }
+  ]
+}

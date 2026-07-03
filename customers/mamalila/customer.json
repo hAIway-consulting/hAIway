@@ -1,0 +1,22 @@
+{
+  "$comment": "Kundenkonfiguration mamalila — Source of Truth im Repo. sync-customer.mts upsertet nach organization_automations der Ziel-Org (Prod: mamalila, Sandbox: claude-test-mamalila).",
+  "slug": "mamalila",
+  "name": "mamalila",
+  "plan": "standard",
+  "features": ["automations"],
+  "integrations": ["shopware", "trello", "inbound_mail_webhook"],
+  "automations": {
+    "shopware-reklamation": {
+      "params": {
+        "trello_list_id": "",
+        "return_reason_default": "Kundenreklamation"
+      }
+    },
+    "shopware-support": {
+      "params": {
+        "trello_list_id": "",
+        "shop_name": "mamalila"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "$comment": "Realistische, anonymisierte Testfälle für die Sandbox claude-test-mamalila. Werden von seed-sandbox.ts als raw_events (inbound_mail_webhook/inbound_mail) eingespielt.",
+    "external_id": "seed-mail-001",
+    "subject": "Rückgabe Tragejacke Bestellung 10023",
+    "from": "julia.brenner@example.com",
+    "body": "Guten Tag,\n\nich habe letzte Woche die Allwetter-Tragejacke in Gr. 38 erhalten (Bestellung 10023). Leider ist der Reißverschluss defekt — er klemmt schon beim ersten Tragen. Ich möchte die Jacke daher zurückgeben und bitte um Erstattung.\n\nWie gehe ich vor?\n\nViele Grüße\nJulia Brenner"
+  },
+  {
+    "external_id": "seed-mail-002",
+    "subject": "Frage zur Größe der Softshelljacke",
+    "from": "m.kaufmann@example.com",
+    "body": "Hallo liebes Team,\n\nich schwanke zwischen Größe M und L bei der Softshell-Tragejacke. Ich bin 1,78 m bei 74 kg und trage normal M — fällt die Jacke eher eng oder weit aus? Und passt mein 8 Monate altes Kind noch bis zum Winter in den Einsatz?\n\nDanke und viele Grüße\nMartin Kaufmann"
+  },
+  {
+    "external_id": "seed-mail-003",
+    "subject": "Falsche Farbe geliefert - Bestellung 10087",
+    "from": "sandra.wolf@example.com",
+    "body": "Sehr geehrte Damen und Herren,\n\nheute kam meine Bestellung 10087 an — allerdings in Marine statt wie bestellt in Oliv. Ich brauche die Jacke bis Ende des Monats. Bitte senden Sie mir die richtige Farbe und sagen Sie mir, wie ich die falsche zurückschicke.\n\nMit freundlichen Grüßen\nSandra Wolf"
+  },
+  {
+    "external_id": "seed-mail-004",
+    "subject": "Ihre Rechnung Nr. 2026-4711",
+    "from": "buchhaltung@stoffgrosshandel-nord.example.com",
+    "body": "Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. 2026-4711 über die Lieferung vom 28.06. Zahlbar innerhalb von 14 Tagen ohne Abzug.\n\nMit freundlichen Grüßen\nStoffgroßhandel Nord GmbH"
+  }
+]

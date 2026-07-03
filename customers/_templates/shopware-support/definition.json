@@ -1,0 +1,65 @@
+{
+  "$comment": "Outcome-Template: Shopware-Support. Klassifiziert Support-Mails, entwirft eine Antwort und legt sie dem Team als Trello-Karte vor.",
+  "$meta": {
+    "name": "Shopware Support",
+    "description": "Support-Mails klassifizieren, Antwortentwurf generieren und dem Team als Trello-Karte zur Prüfung vorlegen. Versendet nie automatisch.",
+    "required_providers": ["trello", "inbound_mail_webhook"],
+    "feature_key": "automations"
+  },
+  "trigger": {
+    "type": "event",
+    "provider_id": "inbound_mail_webhook",
+    "entity_type": "inbound_mail"
+  },
+  "params_schema": {
+    "required": ["trello_list_id"],
+    "fields": {
+      "trello_list_id": {
+        "type": "string",
+        "label": "Trello-Liste für Support-Vorgänge",
+        "help": "ID der Liste, in der Antwortentwürfe zur Prüfung landen"
+      },
+      "shop_name": {
+        "type": "string",
+        "label": "Shop-Name in Antworten",
+        "default": "unser Shop"
+      }
+    }
+  },
+  "steps": [
+    {
+      "key": "classify",
+      "kind": "llm_classify",
+      "name": "E-Mail klassifizieren",
+      "prompt": "@prompts/classify.md",
+      "output_schema": {
+        "intent": "support | reklamation | other",
+        "topic": "string",
+        "summary": "string"
+      }
+    },
+    {
+      "key": "draft_answer",
+      "kind": "llm_classify",
+      "name": "Antwort entwerfen",
+      "when": { "path": "context.classify.intent", "equals": "support" },
+      "prompt": "@prompts/draft-answer.md",
+      "max_tokens": 2048,
+      "output_schema": {
+        "subject": "string",
+        "body": "string"
+      }
+    },
+    {
+      "key": "notify",
+      "kind": "notify",
+      "name": "Entwurf ans Team",
+      "when": { "path": "context.draft_answer.body", "exists": true },
+      "channel": "trello",
+      "message": "Support-Antwort prüfen: {{context.classify.topic}}\n\n**Anfrage:** {{context.classify.summary}}\n\n**Entwurf:**\n\n{{context.draft_answer.body}}",
+      "params": {
+        "list_id": "{{params.trello_list_id}}"
+      }
+    }
+  ]
+}
