@@ -18,3 +18,4 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 .playwright/
+supabase/functions/deno.lock

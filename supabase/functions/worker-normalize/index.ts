@@ -8,6 +8,7 @@
 // New entity types are added by extending the NORMALIZERS map. Anything
 // unknown is acked silently (the raw row is preserved for later replay).
 
+import type { NormalizeMsg } from "@haiway/contracts/queue-messages";
 import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
 import { readBatch, ack, deadLetter, enqueue, queueLength } from "../_shared/queue.ts";
 import { flattenPayloadToText } from "../_shared/normalize.ts";
@@ -16,15 +17,6 @@ const QUEUE                 = "normalize";
 const VISIBILITY_TIMEOUT    = 60;   // seconds
 const BATCH_SIZE            = 25;
 const MAX_ATTEMPTS_PER_MSG  = 5;
-
-interface NormalizeMsg {
-  organization_id: string;
-  provider_id:     string;
-  run_id:          string;
-  external_id:     string;
-  entity_type:     string;
-  payload_hash:    string;
-}
 
 type Normalizer = (
   msg: NormalizeMsg,
