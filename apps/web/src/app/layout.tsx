@@ -26,12 +26,34 @@ const dmSans = DM_Sans({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Verhindert versehentliches Doppeltipp-/Pinch-Zoom → App-Feel im Standalone-Modus.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
+  // Statusbar-Farbe folgt dem App-Hintergrund (Light/Dark) für nahtlosen App-Look.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0f17" },
+  ],
 };
 
 export const metadata: Metadata = {
-  title: "hAIway",
+  applicationName: "hAIway",
+  title: {
+    default: "hAIway",
+    template: "%s · hAIway",
+  },
   description: "AI-Ready Knowledge & Operations Platform",
+  manifest: "/manifest.webmanifest",
+  // iOS-Homescreen: standalone starten, eigener Titel, transluzente Statusbar.
+  appleWebApp: {
+    capable: true,
+    title: "hAIway",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 type Persona = "haiway" | "berater" | "workspace";
