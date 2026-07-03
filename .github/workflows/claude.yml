@@ -33,6 +33,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Install deps up front so Claude can run typecheck/lint against a ready
+      # node_modules instead of trying (and failing) to install on the fly.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
@@ -42,6 +53,9 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # No `prompt` -> interactive mode: Claude responds to @claude mentions
           # and acts on the issue / comment context.
+          # --allowedTools grants Claude permission to run the project checks
+          # (added on top of the action's built-in git/comment tools).
           claude_args: |
             --model claude-opus-4-8
             --max-turns 40
+            --allowedTools "Bash(npm run typecheck:*),Bash(npm run lint:*),Bash(npm run build:*)"
