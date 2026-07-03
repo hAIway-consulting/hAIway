@@ -2,7 +2,13 @@
 // Deno edge workers consume them — this file is the single source of truth
 // for both sides. Keep it runtime-neutral: types and pure values only.
 
-export type QueueName = "ingest" | "normalize" | "embed" | "index" | "extract";
+export type QueueName =
+  | "ingest"
+  | "normalize"
+  | "embed"
+  | "index"
+  | "extract"
+  | "automation";
 
 export interface QueueMessage<T = unknown> {
   msg_id: number;

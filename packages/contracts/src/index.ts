@@ -2,3 +2,4 @@
 // resolution accepts them via allowImportingTsExtensions.
 export * from "./queue-messages.ts";
 export * from "./integrations.ts";
+export * from "./automations.ts";

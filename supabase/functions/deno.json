@@ -3,6 +3,7 @@
     "@haiway/contracts": "../../packages/contracts/src/index.ts",
     "@haiway/contracts/queue-messages": "../../packages/contracts/src/queue-messages.ts",
     "@haiway/contracts/integrations": "../../packages/contracts/src/integrations.ts",
+    "@haiway/contracts/automations": "../../packages/contracts/src/automations.ts",
     "zod": "npm:zod@4.1.12"
   }
 }

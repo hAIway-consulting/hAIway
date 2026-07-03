@@ -6,9 +6,10 @@
 // Direct `pgmq.*` calls would require exposing the pgmq schema, which
 // Supabase blocks by default.
 
+import type { QueueName } from "@haiway/contracts/queue-messages";
 import { getServiceClient } from "./supabase.ts";
 
-export type QueueName = "ingest" | "normalize" | "embed" | "index" | "extract";
+export type { QueueName };
 
 export interface QueueMessage<T = unknown> {
   msg_id:     number;

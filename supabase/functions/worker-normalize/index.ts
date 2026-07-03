@@ -351,6 +351,25 @@ Deno.serve(async (req) => {
           });
         }
       }
+      // Automation dispatch: start runs for every active org automation
+      // whose trigger matches this event. Non-fatal — a dispatch error must
+      // not fail the normalize step itself.
+      const { error: dispatchErr } = await supabase.rpc("dispatch_automation_triggers", {
+        p_org_id:      msg.organization_id,
+        p_provider_id: msg.provider_id,
+        p_entity_type: msg.entity_type,
+        p_trigger_ref: {
+          provider_id:  msg.provider_id,
+          entity_type:  msg.entity_type,
+          external_id:  msg.external_id,
+          payload_hash: msg.payload_hash,
+          run_id:       msg.run_id,
+        },
+      });
+      if (dispatchErr) {
+        console.error("[worker-normalize] automation dispatch failed", dispatchErr.message);
+      }
+
       await ack(QUEUE, m.msg_id);
       processed++;
     } catch (err) {
