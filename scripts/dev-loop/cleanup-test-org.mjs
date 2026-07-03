@@ -1,16 +1,32 @@
-// Resets the claude-test sandbox org to the bare skeleton (org + tester user
+// Resets a claude-test sandbox org to the bare skeleton (org + tester user
 // + profile + membership). Wipes all derived/feature data so each iteration
 // starts from a clean slate.
 //
-// Run with: node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs
+//   node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs
+//     → core sandbox claude-test
+//   node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs --customer mamalila
+//     → customer sandbox claude-test-mamalila
+//
+// Guard is a POSITIVE allowlist: the slug must start with "claude-test" AND
+// the org must carry metadata.is_claude_test_org. Everything else (platform
+// org, customer orgs) is refused — use scripts/ops for those, deliberately.
 
 import { createClient } from "@supabase/supabase-js";
 
-const TEST_ORG_SLUG = "claude-test";
+const customerArgIndex = process.argv.indexOf("--customer");
+const CUSTOMER =
+  customerArgIndex !== -1 ? process.argv[customerArgIndex + 1] : null;
+if (customerArgIndex !== -1 && (!CUSTOMER || CUSTOMER.startsWith("--"))) {
+  console.error("--customer requires a slug");
+  process.exit(1);
+}
+
+const TEST_ORG_SLUG = CUSTOMER ? `claude-test-${CUSTOMER}` : "claude-test";
 
 // Order matters: child rows before parent rows. Tables not present in this
 // list are either irrelevant (e.g. plan_tier_features = global) or covered by
-// ON DELETE CASCADE from one of the listed parents.
+// ON DELETE CASCADE from one of the listed parents (e.g. process_*_steps,
+// automation_step_runs via automation_runs).
 const TENANT_TABLES_IN_DELETE_ORDER = [
   "chat_message_reviews",
   "chat_messages",
@@ -29,9 +45,7 @@ const TENANT_TABLES_IN_DELETE_ORDER = [
   "projects",
   "activity_links",
   "activities",
-  "process_instance_steps",
   "process_instances",
-  "process_template_steps",
   "process_templates",
   "kpi_events",
   "kpi_baselines",
@@ -42,6 +56,17 @@ const TENANT_TABLES_IN_DELETE_ORDER = [
   "phone_numbers",
   "phone_assistants",
   "call_logs",
+  // automation engine
+  "automation_step_runs",
+  "automation_runs",
+  "organization_automations",
+  // pipeline
+  "raw_events",
+  "integration_runs",
+  "job_failures",
+  "rate_limit_buckets",
+  "app_launch_events",
+  // config
   "organization_integrations",
   "organization_features",
 ];
@@ -58,6 +83,11 @@ const supabase = createClient(url, serviceKey, {
 });
 
 async function main() {
+  // Positive allowlist — refuse anything that is not a claude-test sandbox.
+  if (!TEST_ORG_SLUG.startsWith("claude-test")) {
+    throw new Error(`refusing "${TEST_ORG_SLUG}" — only claude-test* sandboxes`);
+  }
+
   const { data: org, error } = await supabase
     .from("organizations")
     .select("id, slug, metadata")

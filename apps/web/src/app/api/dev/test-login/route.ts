@@ -10,12 +10,20 @@ import { NextResponse, type NextRequest } from "next/server";
 // (siehe project_test_users-Memory). Der Endpoint bleibt strikt dev-only —
 // Prod gibt 404, also keine Login-Bypass-Gefahr.
 //
-//  claude-tester  → role 'admin' in claude-test Sandbox  → Persona "berater"
-//  max            → role 'member' in time-keeper Prod    → Persona "workspace"
-//  anna           → role 'member' in time-keeper Prod    → Persona "workspace"
+//  claude-tester           → role 'admin' in claude-test Sandbox          → Persona "berater"
+//  claude-tester-mamalila  → role 'owner' in claude-test-mamalila Sandbox → Kunden-Dev-Loop
+//  max                     → role 'member' in time-keeper Prod            → Persona "workspace"
+//  anna                    → role 'member' in time-keeper Prod            → Persona "workspace"
+//
+// Kunden-Sandbox-Tester werden hier EXPLIZIT eingetragen (kein dynamisches
+// Pattern) — ein Dev-Endpoint mit offenem Muster wäre ein Fußabschuss.
 const TEST_USERS = {
   "claude-tester": {
     email: "claude-tester@bernwald.net",
+    password: "Test1234!",
+  },
+  "claude-tester-mamalila": {
+    email: "claude-tester+mamalila@bernwald.net",
     password: "Test1234!",
   },
   max: {

@@ -16,7 +16,7 @@ Wiederverwendbare AI Foundation Platform. Eigenes Startup = erster Tenant. Gleic
 | DB | Supabase PostgreSQL + pgvector + RLS |
 | Storage | Supabase Storage (Bucket `source-files`) |
 | Validation | Zod 4 |
-| Monorepo | npm workspaces (`apps/web`) |
+| Monorepo | npm workspaces (`apps/*` + `packages/*`) |
 
 ## Regeln (nicht verhandelbar)
 
@@ -41,6 +41,25 @@ Vor Planung oder Umsetzung jeder nicht-trivialen Aufgabe:
 
 Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere durchläuft das Gate.
 
+## Workspace-Regeln (Kern vs. Kunde)
+
+**Wo gehört Code hin?**
+
+| Was | Wohin |
+|---|---|
+| Runtime-neutrale Typen + Zod-Schemas (Queue-Messages, Automation-Definitionen) | `packages/contracts` — **einziges** Package, das auch Deno (Edge Functions) importiert; keine Node-/Deno-APIs, einzige Dependency: zod |
+| Next-gebundene Adapter (cookies, `react` cache): `supabase-server`, `org-context` | `apps/web/src/lib` |
+| UI, Routes, Server Actions | `apps/web` |
+| Edge-Worker + Connector-Clients (Deno) | `supabase/functions` (Import-Map in `functions/deno.json` mappt `@haiway/contracts`) |
+| Generische Outcome-Templates (Platform) | `customers/_templates/<id>/` (definition.json + prompts) |
+| Kundenspezifik (Params, Prompt-Overrides, Seeds, Runbook) | `customers/<slug>/` — **nie** Kunden-Branching in Kern-Code |
+
+**Prinzipien:**
+- Kern-Code (`apps/web`, `packages/*`, `supabase/functions`) importiert **nie** aus `customers/`. Kundenspezifik fließt ausschließlich als Daten: `sync-customer.mts` upsertet Templates + Params in die DB, die Runtime liest nur DB.
+- Repo = Source of Truth, DB = Laufzeit-Wahrheit. Definitionen sind content-gehasht und versioniert — nie in-place ändern.
+- Queue-Message-Shapes werden nur in `@haiway/contracts/queue-messages` definiert (App und Worker sprechen denselben Typ).
+- Fehlt ein Baustein für einen Kundenfall: **generisch** in der Engine ergänzen (Strategy-Gate Frage 3), nicht kundenspezifisch verdrahten.
+
 ## Deployment — Workflow
 
 **Grundprinzip:** Ein Feature = ein Branch = ein Worktree = ein PR = eine Vercel-Preview.
@@ -51,7 +70,8 @@ Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere du
 - Hauptrepo (`C:\Users\thoma\Desktop\Coding\Time keeper`) bleibt **immer auf `main`**.
 - Pro Feature ein eigener Worktree unter:
   `C:\Users\thoma\Desktop\Coding\Time keeper.worktrees\<branch-name>`
-- Branch-Naming: `feature/<kurz-name>` · `fix/<kurz-name>` · `chore/<kurz-name>`
+- Branch-Naming: Kern-Arbeit `feature/<kurz-name>` · `fix/<kurz-name>` · `chore/<kurz-name>`.
+  **Kundenarbeit:** `feature/<kunde>-<kurz-name>` (z. B. `feature/mamalila-reklamation-triage`) — fasst `customers/<kunde>/**` und `e2e/customers/<kunde>/**` an; Kern-Packages nur für generische Bausteine.
 - Worktree-Lifecycle:
   ```
   git worktree add ../Time\ keeper.worktrees/<branch> -b <branch> origin/main
@@ -66,8 +86,9 @@ Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere du
 1. **Worktree + Feature-Branch anlegen** (ausserhalb des Hauptrepos, von `origin/main`). `.env.local` aus Hauptrepo in den Worktree kopieren (sie ist gitignored und wandert nicht automatisch mit).
 2. **Code schreiben + aendern** im Worktree.
 3. **Autonomer Dev-Loop bis Smoke-Test gruen** (siehe naechster Abschnitt). Pflicht vor jedem Push:
-   - `npm run typecheck --workspace apps/web`
-   - `npm run lint --workspace apps/web`
+   - `npm run typecheck` (Root — läuft über alle Workspaces)
+   - `npm run lint` (Root — läuft über alle Workspaces)
+   - Bei Edge-Function-Änderungen: `deno check --config supabase/functions/deno.json supabase/functions/<fn>/index.ts`
    - Dev-Server starten und Smoke-Test laufen lassen (Login + golden path)
    - Bei Fehlern: lesen, fixen, re-run — bis zu den Eskalationsgrenzen
    - Bei groesseren Aenderungen zusaetzlich `npm run build --workspace apps/web`
@@ -89,14 +110,23 @@ Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere du
 - Dev-Server starten: `PORT=$(node scripts/dev-loop/dev-port.mjs) npm run dev --workspace apps/web` als Background-Task.
 - Smoke-Test laufen: `DEV_PORT=$(node scripts/dev-loop/dev-port.mjs) npx playwright test e2e/smoke.spec.ts`
 
-**Test-Daten — Sandbox-Org `claude-test`:**
-- Org-ID: `c20b8a68-363c-4df9-9409-bbf1a881b072` (Slug `claude-test`, Name `[CLAUDE-TEST] Sandbox`).
-- Tester-Login: `claude-tester@bernwald.net` / `Test1234!` (Rolle `admin`, `is_default=true`).
-- Setup neu/idempotent: `node --env-file=apps/web/.env.local scripts/dev-loop/setup-test-org.mjs`
-- Aufraeumen nach jedem Iterationsblock: `node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs` — wischt alle org-gescopeten Tabellen, laesst Org/User/Profile/Member stehen.
-- **Niemals gegen `time-keeper` (Prod-Org) testen.** Cleanup-Skript verweigert das aktiv.
+**Test-Daten — Sandbox-Matrix (eine Sandbox-Org pro Kontext):**
 
-**Login im Test:** `GET /api/dev/test-login?user=claude-tester&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404).
+| Kontext | Org-Slug | Tester | Org-ID |
+|---|---|---|---|
+| Kern / Plattform | `claude-test` | `claude-tester@bernwald.net` | `c20b8a68-363c-4df9-9409-bbf1a881b072` |
+| Kunde mamalila | `claude-test-mamalila` | `claude-tester+mamalila@bernwald.net` | *(nach Anlage eintragen)* |
+
+- Passwort aller Tester: `Test1234!` (Rolle `admin`, `is_default=true`).
+- Setup neu/idempotent (legt Org selbst an): `node --env-file=apps/web/.env.local scripts/dev-loop/setup-test-org.mjs [--customer <slug>]`
+- Kunden-Sandbox danach befüllen: `sync-customer.mts --customer <slug> --org claude-test-<slug> --apply` + `seed-sandbox.mts --customer <slug> --apply` (beide unter `scripts/customers/`).
+- Aufraeumen nach jedem Iterationsblock: `node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs [--customer <slug>]` — wischt alle org-gescopeten Tabellen, laesst Org/User/Profile/Member stehen. Guard: Positiv-Allowlist, nur `claude-test*`-Slugs mit `metadata.is_claude_test_org`.
+- **Niemals gegen die Plattform-Org oder Kunden-Orgs testen.** Cleanup-Skript verweigert das aktiv.
+
+**Login im Test:** `GET /api/dev/test-login?user=claude-tester[-<kunde>]&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404). Kunden-Tester werden in der `TEST_USERS`-Map explizit eingetragen.
+
+**Kunden-Dev-Loop:** `TEST_CUSTOMER=<slug>` wählt den Tester im Smoke-Test (`e2e/helpers/login.ts`); Kunden-Specs liegen in `e2e/customers/<slug>/` und skippen ohne passendes `TEST_CUSTOMER`.
+Aufruf: `TEST_CUSTOMER=mamalila DEV_PORT=$(node scripts/dev-loop/dev-port.mjs) npx playwright test e2e/smoke.spec.ts e2e/customers/mamalila`
 
 **Eskalation an User (Loop sofort stoppen, kurz melden):**
 - Mehr als **5 Iterationen** fuer denselben Bug
@@ -151,3 +181,4 @@ ANTHROPIC_API_KEY=          # in Vercel NICHT gesetzt; Edge-Functions ziehen ihn
 - **Strategie / Nordstern** → `docs/strategie.md` (Pflichtlektüre via Strategy Gate · Präsentationsversion: `docs/strategie.html`)
 - **Frontend-Details** → `apps/web/CLAUDE.md`
 - **Datenbank / Migrations** → `supabase/CLAUDE.md`
+- **Kundenprojekte** → `customers/<slug>/runbook.md` (Onboarding-Stand, Besonderheiten je Kunde)
