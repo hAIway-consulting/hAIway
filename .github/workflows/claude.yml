@@ -44,4 +44,4 @@ jobs:
           # and acts on the issue / comment context.
           claude_args: |
             --model claude-opus-4-8
-            --max-turns 15
+            --max-turns 40
