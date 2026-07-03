@@ -149,6 +149,21 @@ AI_KEYS_ENCRYPTION_SECRET=  # verschluesselt ai_provider_keys (AES-256-GCM). In 
                             # Tenant-Keys (Env-Fallback haelt die Plattform am Leben, Keys neu erfassen).
 ```
 
+## Agent-Workflow-Regeln
+
+Diese Regeln gelten, wenn Claude über die GitHub Action (`@claude` in Issues/PRs
+oder Label `claude`) autonom im Repo arbeitet:
+
+- **Kleine, fokussierte PRs** — eine Aufgabe pro PR. Keine Sammel-Änderungen; lieber
+  mehrere kleine PRs als einen grossen.
+- **Niemals direkt auf `main` pushen** — Änderungen immer über einen Feature-Branch
+  und PR. `main` bleibt heilig (siehe Deployment-Workflow oben).
+- **Aussagekräftige Commit-Messages auf Englisch** — was und warum, nicht nur „fix".
+  Conventional-Commit-Präfixe (`feat:`, `fix:`, `chore:` …) sind erwünscht.
+- **Bei Unklarheiten nachfragen statt raten** — wenn ein Issue mehrdeutig ist oder
+  Kontext fehlt, einen Klärungs-Kommentar im Issue hinterlassen und auf Antwort
+  warten, statt eine Annahme zu implementieren.
+
 ## Sub-Dokumentation
 
 - **Strategie / Nordstern** → `docs/strategie.md` (Pflichtlektüre via Strategy Gate · Präsentationsversion: `docs/strategie.html`)
