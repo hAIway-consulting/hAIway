@@ -50,7 +50,9 @@ export function WorkspaceShell({
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-6"
         style={{
-          height: "var(--header-h)",
+          // Standalone/iOS: Statusbar-Höhe oben freihalten, damit der Header nicht unter der Notch verschwindet.
+          height: "calc(var(--header-h) + env(safe-area-inset-top))",
+          paddingTop: "env(safe-area-inset-top)",
           borderBottom: "1px solid var(--color-line-soft)",
           background: "color-mix(in srgb, var(--color-panel) 88%, transparent)",
           backdropFilter: "blur(12px)",
@@ -219,6 +221,9 @@ export function WorkspaceShell({
               style={{
                 background: "var(--color-panel)",
                 borderRight: "1px solid var(--color-line-soft)",
+                // Drawer läuft randlos bis zu den Screen-Kanten — Safe-Areas oben/unten respektieren.
+                paddingTop: "env(safe-area-inset-top)",
+                paddingBottom: "env(safe-area-inset-bottom)",
               }}
               onClick={() => setDrawerOpen(false)}
             >
