@@ -91,6 +91,46 @@ async function main() {
     console.log(`✓ member  exists (role=${existing.role}, default=${existing.is_default})`);
   }
 
+  // CRM sandbox (tolerant: skipped until the crm_workspace migrations are
+  // pushed). Enables the feature flag and wires the twenty provider to the
+  // inline mock (base_url mock://twenty) so e2e/crm.spec.ts can run without
+  // a Twenty instance or edge runtime.
+  const { error: flagErr } = await supabase.from("organization_features").upsert(
+    { organization_id: org.id, feature_key: "crm_workspace", enabled: true },
+    { onConflict: "organization_id,feature_key" },
+  );
+  if (flagErr) {
+    console.log(`- crm   skipped (${flagErr.message}) — run db push for the crm migrations first`);
+  } else {
+    const { error: integErr } = await supabase.from("organization_integrations").upsert(
+      {
+        organization_id: org.id,
+        provider_id: "twenty",
+        status: "active",
+        credential_mode: "customer",
+        credentials: { api_key: "mock-api-key" },
+        config: {
+          base_url: "mock://twenty",
+          available_roles: [
+            { id: "mock-role-admin", label: "Admin" },
+            { id: "mock-role-member", label: "Member" },
+          ],
+          role_map: {
+            member: { twenty_role_id: "mock-role-member", label: "Member" },
+            admin: { twenty_role_id: "mock-role-admin", label: "Admin" },
+          },
+        },
+        error_message: null,
+      },
+      { onConflict: "organization_id,provider_id" },
+    );
+    if (integErr) {
+      console.log(`- crm   flag ok, integration skipped (${integErr.message})`);
+    } else {
+      console.log(`✓ crm   feature flag + mock twenty integration`);
+    }
+  }
+
   console.log(`\nReady. Login: ${TESTER.email} / ${TESTER.password}`);
 }
 
