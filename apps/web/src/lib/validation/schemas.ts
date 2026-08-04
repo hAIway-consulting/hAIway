@@ -123,6 +123,44 @@ export const projectSchema = z.object({
   description: trimmedOptional(DESCRIPTION_MAX),
 });
 
+// ── CRM (Twenty) ──────────────────────────────────────────────────────
+// Secret fields are optional: an empty submit keeps the stored value.
+export const twentyConnectionSchema = z.object({
+  baseUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (v) => v.startsWith("mock://") || /^https?:\/\/.+/.test(v),
+      { message: "Ungültige URL (z. B. https://crm.example.com)" },
+    )
+    .transform((v) => v.replace(/\/+$/, "")),
+  apiKey: trimmedOptional(4000),
+  serviceEmail: z
+    .string()
+    .trim()
+    .max(320)
+    .optional()
+    .nullable()
+    .transform((v) => v || null)
+    .refine((v) => v === null || /.+@.+\..+/.test(v), { message: "Ungültige E-Mail" }),
+  servicePassword: trimmedOptional(500),
+});
+
+// Level keys are config-driven (role_map); constrain the format, not the set.
+export const crmLevelKeySchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9][a-z0-9_-]{1,31}$/, {
+    message: "Level-Name: 2–32 Zeichen, Kleinbuchstaben/Ziffern/-/_",
+  });
+
+export const crmSetLevelSchema = z.object({
+  userId: uuid,
+  level: z.union([z.literal("none"), crmLevelKeySchema]),
+});
+
 // ── File validation ────────────────────────────────────────────────────
 const PDF_MIME_ALLOW = new Set(["application/pdf"]);
 const AUDIO_MIME_ALLOW = new Set([
