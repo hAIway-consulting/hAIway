@@ -66,9 +66,12 @@ Danach `https://<CRM_DOMAIN>` öffnen → Admin-Konto + Workspace anlegen
 3. **Service-Login (empfohlen):** eigenes Konto `service@<domain>` als Workspace-Admin
    einladen. Es dient als Fallback für Einladungs-Mutationen, die einen User-Kontext
    verlangen (reine API-Keys dürfen `sendInvitations` je nach Version nicht aufrufen).
-4. **E-Mail-Versand (optional, für Einladungs-Mails):** SMTP-Variablen in Compose
-   ergänzen (`EMAIL_DRIVER`, `EMAIL_SMTP_*` — siehe Twenty-Doku). Ohne SMTP werden
-   Einladungen als Link erzeugt, den `/admin/crm` zum Kopieren anzeigt.
+4. **E-Mail-Versand (Einladungs-Mails):** läuft über Resend-SMTP — die `EMAIL_*`-Werte
+   stehen in `.env` (`EMAIL_SMTP_HOST=smtp.resend.com`, User `resend`, Passwort =
+   Resend-API-Key `twenty-crm-smtp`, Absender `crm@app.haiway-consulting.com`).
+   Key rotieren: Resend → API Keys → neuen sending-only Key für die Domain erzeugen,
+   `.env` aktualisieren, `docker compose up -d`. Ohne `EMAIL_DRIVER` werden Einladungen
+   nur als Link erzeugt (in Twenty unter Settings → Members kopierbar).
 
 ## 5. In hAIway verbinden
 
