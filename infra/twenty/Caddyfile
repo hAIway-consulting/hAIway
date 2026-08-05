@@ -1,0 +1,6 @@
+# Caddy fronts the Twenty server and terminates TLS automatically
+# (Let's Encrypt for real domains, self-managed certs for sslip.io).
+# CRM_DOMAIN comes from .env, e.g. crm.example.com or 203-0-113-10.sslip.io
+{$CRM_DOMAIN} {
+	reverse_proxy server:3000
+}

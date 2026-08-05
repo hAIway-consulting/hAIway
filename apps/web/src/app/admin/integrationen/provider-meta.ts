@@ -84,6 +84,12 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     connectKind:  "credentials-form",
     note:         "Formular + Connection-Test folgt im nächsten PR.",
   },
+  twenty: {
+    color:        "#1961ed",
+    description:  "Selbst gehostetes Twenty CRM — Zugänge + Rollen werden automatisch synchronisiert.",
+    connectKind:  "coming-soon",
+    note:         "Setup + Zugriffsverwaltung (CRM-Zugänge) folgen im nächsten PR. Betrieb: docs/crm-twenty.md",
+  },
 };
 
 // Virtual providers are UI-only cards that piggyback on another provider's
