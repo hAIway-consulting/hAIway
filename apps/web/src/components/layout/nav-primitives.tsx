@@ -155,12 +155,27 @@ export function IconBuilding({ size = 20 }: { size?: number }) {
   );
 }
 
+export function IconCrm({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="2" />
+      <path d="M5.5 16c.5-1.8 1.8-3 3.5-3s3 1.2 3.5 3" />
+      <path d="M15 9h4M15 13h4" />
+    </svg>
+  );
+}
+
 // ─── Types ─────────────────────────────────────────────────────────────
 
 export type NavItem = {
   href: string;
   label: string;
   icon: ComponentType<{ size?: number }>;
+  /** External target: renders a plain <a target="_blank"> instead of a route link. */
+  external?: boolean;
+  /** Fired on click of an external item (e.g. audit logging). */
+  onOpen?: () => void;
 };
 
 export type NavGroup = {
@@ -182,6 +197,37 @@ export function NavLink({
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(item.href + "/");
   const Icon = item.icon;
+
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => item.onOpen?.()}
+        className="flex items-center gap-2.5 min-h-[40px] px-3 rounded-xl text-[13px] font-medium transition-all"
+        style={{
+          background: "transparent",
+          color: "var(--color-muted)",
+          transition: `all var(--duration-fast) var(--ease-out)`,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--color-bg-elevated)";
+          e.currentTarget.style.color = "var(--color-text)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "var(--color-muted)";
+        }}
+      >
+        <Icon size={18} />
+        {item.label}
+        <span aria-hidden className="ml-auto text-[11px]" style={{ color: "var(--color-placeholder)" }}>
+          ↗
+        </span>
+      </a>
+    );
+  }
 
   return (
     <Link

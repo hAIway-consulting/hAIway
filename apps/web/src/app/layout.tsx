@@ -10,6 +10,7 @@ import { createUserClient, getSession } from "@/lib/db/supabase-server";
 import { getOrgBranding, getOrganization, isPlatformAdmin } from "@/lib/db/queries/organization";
 import { getMemberRole } from "@/lib/db/org-context";
 import { hasFeature } from "@/lib/features/flags";
+import { getCrmNavState, type CrmNavState } from "@/lib/features/crm";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -69,17 +70,20 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   let hasPhoneAssistant = false;
   let beraterNavVariant: "manager" | "berater" = "manager";
   let canManageOrg = false;
+  let crm: CrmNavState = { showLaunch: false, showAdmin: false, launchUrl: null };
 
   if (user) {
     try {
-      const [b, platformAdmin, role, phoneFlag] = await Promise.all([
+      const [b, platformAdmin, role, phoneFlag, crmState] = await Promise.all([
         getOrgBranding(),
         isPlatformAdmin(),
         getMemberRole(),
         hasFeature("phone_assistant"),
+        getCrmNavState(),
       ]);
       branding = b;
       hasPhoneAssistant = phoneFlag;
+      crm = crmState;
       canManageOrg = platformAdmin || role === "admin" || role === "owner";
 
       if (platformAdmin) {
@@ -109,11 +113,21 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   const sidebar =
     persona === "haiway" ? (
-      <NavHaiway />
+      <NavHaiway hasCrm={crm.showLaunch} hasCrmAdmin={crm.showAdmin} crmLaunchUrl={crm.launchUrl} />
     ) : persona === "berater" ? (
-      <NavBerater hasPhoneAssistant={hasPhoneAssistant} variant={beraterNavVariant} />
+      <NavBerater
+        hasPhoneAssistant={hasPhoneAssistant}
+        hasCrm={crm.showLaunch}
+        hasCrmAdmin={crm.showAdmin}
+        crmLaunchUrl={crm.launchUrl}
+        variant={beraterNavVariant}
+      />
     ) : (
-      <NavWorkspace hasPhoneAssistant={hasPhoneAssistant} />
+      <NavWorkspace
+        hasPhoneAssistant={hasPhoneAssistant}
+        hasCrm={crm.showLaunch}
+        crmLaunchUrl={crm.launchUrl}
+      />
     );
 
   return (

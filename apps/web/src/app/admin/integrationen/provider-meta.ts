@@ -85,10 +85,12 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     note:         "Formular + Connection-Test folgt im nächsten PR.",
   },
   twenty: {
-    color:        "#1961ed",
-    description:  "Selbst gehostetes Twenty CRM — Zugänge + Rollen werden automatisch synchronisiert.",
-    connectKind:  "coming-soon",
-    note:         "Setup + Zugriffsverwaltung (CRM-Zugänge) folgen im nächsten PR. Betrieb: docs/crm-twenty.md",
+    color:            "#1961ed",
+    description:      "Selbst gehostetes Twenty CRM — Zugänge + Rollen werden automatisch synchronisiert.",
+    connectKind:      "wizard",
+    setupRoute:       "/admin/crm",
+    configuringRoute: "/admin/crm",
+    note:             "Einrichtung + Zugriffsverwaltung unter CRM-Zugänge. Betrieb: docs/crm-twenty.md",
   },
 };
 

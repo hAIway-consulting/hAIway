@@ -1,10 +1,12 @@
 "use client";
 
+import { recordCrmLaunch } from "@/app/crm/actions";
 import {
   IconHome,
   IconChat,
   IconPhone,
   IconBox,
+  IconCrm,
   NavLink,
   NavGroupBlock,
   type NavGroup,
@@ -16,13 +18,34 @@ import {
  * Die frühere Suche ist im Cockpit aufgegangen (Chat-Modus = Hybrid-Suche).
  * Kein Datei-Upload, keine Verwaltungs-Items.
  */
-export function NavWorkspace({ hasPhoneAssistant }: { hasPhoneAssistant?: boolean }) {
+export function NavWorkspace({
+  hasPhoneAssistant,
+  hasCrm,
+  crmLaunchUrl,
+}: {
+  hasPhoneAssistant?: boolean;
+  hasCrm?: boolean;
+  crmLaunchUrl?: string | null;
+}) {
   const groups: NavGroup[] = [
     {
       label: "Arbeiten",
       items: [
         { href: "/chat", label: "hAIway Cockpit", icon: IconChat },
         { href: "/automatisierungen", label: "Automatisierungen", icon: IconBox },
+        ...(hasCrm
+          ? [
+              crmLaunchUrl
+                ? {
+                    href: crmLaunchUrl,
+                    label: "CRM",
+                    icon: IconCrm,
+                    external: true,
+                    onOpen: () => void recordCrmLaunch(),
+                  }
+                : { href: "/crm", label: "CRM", icon: IconCrm },
+            ]
+          : []),
       ],
     },
   ];
