@@ -125,6 +125,7 @@ Danach `https://<CRM_DOMAIN>` öffnen → Admin-Konto + Workspace anlegen
 | Rollen-Drift trotz Sync | hAIway ist Source of Truth — „Jetzt abgleichen" setzt die Twenty-Rolle zurück |
 | Nutzer nutzt andere E-Mail in Twenty | Sync matched über E-Mail (lowercase). Konto in Twenty auf die hAIway-E-Mail umstellen oder manuell auflösen |
 | Server unhealthy nach Neustart | `docker compose logs server` — meist fehlende/falsche `.env`-Secrets (`ENCRYPTION_KEY` niemals rotieren, sonst sind verschlüsselte Daten weg) |
+| Einladungs-Mails kommen nicht an | Hetzner blockt ausgehend Port 25/465 standardmäßig → `EMAIL_SMTP_PORT=587` verwenden (Resend unterstützt 587/2465/2587). Zustellung prüfbar in den Resend-Logs |
 
 ## Sicherheits-Notizen
 
