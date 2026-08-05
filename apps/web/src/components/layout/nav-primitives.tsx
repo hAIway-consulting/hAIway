@@ -172,6 +172,10 @@ export type NavItem = {
   href: string;
   label: string;
   icon: ComponentType<{ size?: number }>;
+  /** External target: renders a plain <a target="_blank"> instead of a route link. */
+  external?: boolean;
+  /** Fired on click of an external item (e.g. audit logging). */
+  onOpen?: () => void;
 };
 
 export type NavGroup = {
@@ -193,6 +197,37 @@ export function NavLink({
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(item.href + "/");
   const Icon = item.icon;
+
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => item.onOpen?.()}
+        className="flex items-center gap-2.5 min-h-[40px] px-3 rounded-xl text-[13px] font-medium transition-all"
+        style={{
+          background: "transparent",
+          color: "var(--color-muted)",
+          transition: `all var(--duration-fast) var(--ease-out)`,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--color-bg-elevated)";
+          e.currentTarget.style.color = "var(--color-text)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "var(--color-muted)";
+        }}
+      >
+        <Icon size={18} />
+        {item.label}
+        <span aria-hidden className="ml-auto text-[11px]" style={{ color: "var(--color-placeholder)" }}>
+          ↗
+        </span>
+      </a>
+    );
+  }
 
   return (
     <Link

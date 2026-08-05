@@ -1,5 +1,6 @@
 "use client";
 
+import { recordCrmLaunch } from "@/app/crm/actions";
 import {
   IconHome,
   IconChat,
@@ -20,9 +21,11 @@ import {
 export function NavWorkspace({
   hasPhoneAssistant,
   hasCrm,
+  crmLaunchUrl,
 }: {
   hasPhoneAssistant?: boolean;
   hasCrm?: boolean;
+  crmLaunchUrl?: string | null;
 }) {
   const groups: NavGroup[] = [
     {
@@ -30,7 +33,19 @@ export function NavWorkspace({
       items: [
         { href: "/chat", label: "hAIway Cockpit", icon: IconChat },
         { href: "/automatisierungen", label: "Automatisierungen", icon: IconBox },
-        ...(hasCrm ? [{ href: "/crm", label: "CRM", icon: IconCrm }] : []),
+        ...(hasCrm
+          ? [
+              crmLaunchUrl
+                ? {
+                    href: crmLaunchUrl,
+                    label: "CRM",
+                    icon: IconCrm,
+                    external: true,
+                    onOpen: () => void recordCrmLaunch(),
+                  }
+                : { href: "/crm", label: "CRM", icon: IconCrm },
+            ]
+          : []),
       ],
     },
   ];

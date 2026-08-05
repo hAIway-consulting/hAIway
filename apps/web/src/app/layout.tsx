@@ -70,7 +70,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   let hasPhoneAssistant = false;
   let beraterNavVariant: "manager" | "berater" = "manager";
   let canManageOrg = false;
-  let crm: CrmNavState = { showLaunch: false, showAdmin: false };
+  let crm: CrmNavState = { showLaunch: false, showAdmin: false, launchUrl: null };
 
   if (user) {
     try {
@@ -113,16 +113,21 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   const sidebar =
     persona === "haiway" ? (
-      <NavHaiway hasCrm={crm.showLaunch} hasCrmAdmin={crm.showAdmin} />
+      <NavHaiway hasCrm={crm.showLaunch} hasCrmAdmin={crm.showAdmin} crmLaunchUrl={crm.launchUrl} />
     ) : persona === "berater" ? (
       <NavBerater
         hasPhoneAssistant={hasPhoneAssistant}
         hasCrm={crm.showLaunch}
         hasCrmAdmin={crm.showAdmin}
+        crmLaunchUrl={crm.launchUrl}
         variant={beraterNavVariant}
       />
     ) : (
-      <NavWorkspace hasPhoneAssistant={hasPhoneAssistant} hasCrm={crm.showLaunch} />
+      <NavWorkspace
+        hasPhoneAssistant={hasPhoneAssistant}
+        hasCrm={crm.showLaunch}
+        crmLaunchUrl={crm.launchUrl}
+      />
     );
 
   return (

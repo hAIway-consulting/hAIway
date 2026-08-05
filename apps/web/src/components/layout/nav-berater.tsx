@@ -1,5 +1,6 @@
 "use client";
 
+import { recordCrmLaunch } from "@/app/crm/actions";
 import {
   IconHome,
   IconSources,
@@ -29,14 +30,25 @@ export function NavBerater({
   hasPhoneAssistant,
   hasCrm,
   hasCrmAdmin,
+  crmLaunchUrl,
   variant = "manager",
 }: {
   hasPhoneAssistant?: boolean;
   hasCrm?: boolean;
   hasCrmAdmin?: boolean;
+  crmLaunchUrl?: string | null;
   variant?: "manager" | "berater";
 }) {
   const isManager = variant === "manager";
+  const crmItem = crmLaunchUrl
+    ? {
+        href: crmLaunchUrl,
+        label: "CRM",
+        icon: IconCrm,
+        external: true,
+        onOpen: () => void recordCrmLaunch(),
+      }
+    : { href: "/crm", label: "CRM", icon: IconCrm };
   const groups: NavGroup[] = [
     {
       label: "Daten & Zugriff",
@@ -52,7 +64,7 @@ export function NavBerater({
       items: [
         { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
         { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
-        ...(hasCrm ? [{ href: "/crm", label: "CRM", icon: IconCrm }] : []),
+        ...(hasCrm ? [crmItem] : []),
         { href: "/admin/retrieval-qualitaet", label: "KPIs", icon: IconChart },
       ],
     },

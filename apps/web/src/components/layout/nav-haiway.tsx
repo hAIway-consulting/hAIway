@@ -1,5 +1,6 @@
 "use client";
 
+import { recordCrmLaunch } from "@/app/crm/actions";
 import {
   IconHome,
   IconUsers,
@@ -31,10 +32,21 @@ import {
 export function NavHaiway({
   hasCrm,
   hasCrmAdmin,
+  crmLaunchUrl,
 }: {
   hasCrm?: boolean;
   hasCrmAdmin?: boolean;
+  crmLaunchUrl?: string | null;
 }) {
+  const crmItem = crmLaunchUrl
+    ? {
+        href: crmLaunchUrl,
+        label: "CRM",
+        icon: IconCrm,
+        external: true,
+        onOpen: () => void recordCrmLaunch(),
+      }
+    : { href: "/crm", label: "CRM", icon: IconCrm };
   const groups: NavGroup[] = [
     {
       label: "Kunden",
@@ -45,7 +57,7 @@ export function NavHaiway({
       items: [
         { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
         { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
-        ...(hasCrm ? [{ href: "/crm", label: "CRM", icon: IconCrm }] : []),
+        ...(hasCrm ? [crmItem] : []),
       ],
     },
     {

@@ -17,6 +17,10 @@ const PROVIDER_ID = "twenty";
 export interface CrmNavState {
   showLaunch: boolean;
   showAdmin: boolean;
+  /** Direct external target for the nav entry — set only when the user's
+   * access is synced and a real (non-mock) instance is configured; the nav
+   * then links straight to Twenty instead of the /crm status page. */
+  launchUrl: string | null;
 }
 
 export interface CrmAccess {
@@ -29,24 +33,37 @@ export interface CrmAccess {
 
 export const getCrmNavState = cache(async (): Promise<CrmNavState> => {
   const enabled = await hasFeature("crm_workspace");
-  if (!enabled) return { showLaunch: false, showAdmin: false };
+  if (!enabled) return { showLaunch: false, showAdmin: false, launchUrl: null };
 
   const user = await getUser();
-  if (!user) return { showLaunch: false, showAdmin: false };
+  if (!user) return { showLaunch: false, showAdmin: false, launchUrl: null };
 
   try {
     const orgId = await requireOrgId();
     const db = await createUserClient();
     const { data } = await db
       .from("member_app_permissions")
-      .select("level")
+      .select("level, sync_status")
       .eq("organization_id", orgId)
       .eq("user_id", user.id)
       .eq("app_key", APP_KEY)
-      .maybeSingle();
-    return { showLaunch: !!data, showAdmin: true };
+      .maybeSingle<{ level: string; sync_status: string }>();
+
+    let launchUrl: string | null = null;
+    if (data?.sync_status === "synced") {
+      const serviceDb = createServiceClient();
+      const { data: integration } = await serviceDb
+        .from("organization_integrations")
+        .select("config")
+        .eq("organization_id", orgId)
+        .eq("provider_id", PROVIDER_ID)
+        .maybeSingle<{ config: { base_url?: string } }>();
+      const baseUrl = integration?.config?.base_url;
+      if (baseUrl && !baseUrl.startsWith("mock://")) launchUrl = baseUrl;
+    }
+    return { showLaunch: !!data, showAdmin: true, launchUrl };
   } catch {
-    return { showLaunch: false, showAdmin: true };
+    return { showLaunch: false, showAdmin: true, launchUrl: null };
   }
 });
 
