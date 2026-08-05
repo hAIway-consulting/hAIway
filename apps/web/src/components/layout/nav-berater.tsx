@@ -10,6 +10,7 @@ import {
   IconPhone,
   IconBuilding,
   IconBox,
+  IconCrm,
   NavLink,
   NavGroupBlock,
   type NavGroup,
@@ -26,9 +27,13 @@ import {
  */
 export function NavBerater({
   hasPhoneAssistant,
+  hasCrm,
+  hasCrmAdmin,
   variant = "manager",
 }: {
   hasPhoneAssistant?: boolean;
+  hasCrm?: boolean;
+  hasCrmAdmin?: boolean;
   variant?: "manager" | "berater";
 }) {
   const isManager = variant === "manager";
@@ -47,6 +52,7 @@ export function NavBerater({
       items: [
         { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
         { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
+        ...(hasCrm ? [{ href: "/crm", label: "CRM", icon: IconCrm }] : []),
         { href: "/admin/retrieval-qualitaet", label: "KPIs", icon: IconChart },
       ],
     },
@@ -56,6 +62,9 @@ export function NavBerater({
             label: "System",
             items: [
               { href: "/admin/integrationen", label: "Datenquellen + Sync", icon: IconPlug },
+              ...(hasCrmAdmin
+                ? [{ href: "/admin/crm", label: "CRM-Zugänge", icon: IconCrm }]
+                : []),
               { href: "/admin/branding", label: "Branding", icon: IconBuilding },
               ...(hasPhoneAssistant
                 ? [{ href: "/telefon-assistent", label: "Telefon", icon: IconPhone }]

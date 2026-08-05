@@ -155,6 +155,17 @@ export function IconBuilding({ size = 20 }: { size?: number }) {
   );
 }
 
+export function IconCrm({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="2" />
+      <path d="M5.5 16c.5-1.8 1.8-3 3.5-3s3 1.2 3.5 3" />
+      <path d="M15 9h4M15 13h4" />
+    </svg>
+  );
+}
+
 // ─── Types ─────────────────────────────────────────────────────────────
 
 export type NavItem = {
