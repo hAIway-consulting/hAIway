@@ -109,5 +109,18 @@ Ausnahme: die `phone-assistant-*`-Functions stehen mit `verify_jwt = false` in
 ein Service-Role-Guard falsch — sie authentifizieren den Aufrufer über das
 Vapi-Shared-Secret: `verifyVapiSignature()` aus `functions/_shared/vapi-verify.ts`
 prüft den Header `x-vapi-secret` bzw. `x-vapi-signature` gegen `VAPI_SECRET`.
-Achtung: ist `VAPI_SECRET` nicht gesetzt, akzeptiert die Prüfung alles
-(Dev-Fallback) — in Produktion muss das Secret gesetzt sein.
+
+`VAPI_SECRET` ist damit PFLICHT, nicht optional: es ist das einzige, was diese
+beiden Endpunkte vom offenen Internet trennt. Die Prüfung war bis zum Audit
+2026-08-06 fail-open (fehlendes Secret ⇒ alles akzeptiert) — und im
+Produktionsprojekt war das Secret nicht gesetzt. Sie ist jetzt fail-closed:
+ohne Secret wird abgelehnt. Vor dem nächsten `functions deploy` muss also
+
+```
+supabase secrets set VAPI_SECRET=<wert> --project-ref <ref>
+```
+
+gesetzt sein UND derselbe Wert als `serverUrlSecret` am Vapi-Assistenten
+hinterlegt werden (passiert automatisch beim nächsten `syncVapiConfig`, sofern
+`VAPI_SECRET` auch in den Vercel-Envs steht). Lokal ohne Secret arbeiten geht
+nur über das ausdrückliche `VAPI_ALLOW_UNVERIFIED=true`.

@@ -135,7 +135,12 @@ MICROSOFT_CLIENT_SECRET=
 MICROSOFT_TENANT_ID=
 NEXT_PUBLIC_VAPI_PUBLIC_KEY=
 VAPI_API_KEY=
-VAPI_SECRET=
+VAPI_SECRET=                # Shared Secret der Vapi-Webhooks. PFLICHT auch als
+                            # Supabase-Secret (`supabase secrets set`) — die
+                            # phone-assistant-Functions laufen mit
+                            # verify_jwt=false und pruefen ausschliesslich
+                            # dagegen. Fehlt es, lehnen sie seit dem Audit
+                            # 2026-08-06 jeden Aufruf ab (vorher: fail-open).
 VAPI_SERVER_URL=
 ```
 
