@@ -5,6 +5,23 @@
 -- deliberate, separate `supabase db push` step and watch the connector runs
 -- afterwards.
 --
+-- PREREQUISITE — the two vault secrets must exist, otherwise every cron that
+-- goes through the helper below turns into a no-op (it logs a WARNING and
+-- returns NULL, the cron run itself still counts as successful). Verify:
+--
+--   SELECT name FROM vault.decrypted_secrets
+--    WHERE name IN ('project_url', 'service_role_key');
+--
+-- Both rows must come back. If one is missing, create it once (SQL editor,
+-- as the `postgres` role — the value is the project URL resp. the
+-- service_role key from Project Settings > API):
+--
+--   SELECT vault.create_secret('https://<ref>.supabase.co', 'project_url');
+--   SELECT vault.create_secret('<service-role-key>',        'service_role_key');
+--
+-- To rotate a value later use vault.update_secret(<id>, '<new value>') — do
+-- NOT create a second secret with the same name, the helper takes LIMIT 1.
+--
 -- This file collects the connector-side cleanup of the 2026-08-06 feature
 -- audit. It is written in two parts:
 --   PART A (below) — retire the two connector providers that have no runtime
@@ -79,9 +96,18 @@ DELETE FROM public.feature_flags         WHERE key         = 'webhook_connector'
 --   * stay asynchronous           -> net.http_post (pg_net) is fire-and-forget;
 --                                    the cron transaction only enqueues the
 --                                    request and returns in milliseconds
---   * skip cleanly if the secret is missing -> RAISE NOTICE + RETURN NULL, so
+--   * skip cleanly if the secret is missing -> RAISE WARNING + RETURN NULL, so
 --                                    the cron run succeeds and simply does
---                                    nothing instead of erroring every 15 min
+--                                    nothing instead of erroring every 15 min.
+--                                    WARNING rather than NOTICE because this
+--                                    is the only signal that the delta sync
+--                                    has silently stopped.
+--   * never let the caller pick the URL -> p_name is matched against a fixed
+--                                    allowlist. Without it, an unqualified
+--                                    name is concatenated into the URL and
+--                                    '../../rest/v1/<table>' would turn the
+--                                    helper into a service-role proxy for the
+--                                    whole REST API.
 
 CREATE OR REPLACE FUNCTION public.invoke_edge_function_async(
   p_name TEXT,
@@ -94,6 +120,18 @@ DECLARE
   v_key TEXT;
   v_id  BIGINT;
 BEGIN
+  IF p_name IS NULL OR p_name NOT IN (
+    'connector-gdrive',
+    'connector-sharepoint',
+    'connector-twenty',
+    'worker-normalize',
+    'worker-embed',
+    'worker-extract-entities'
+  ) THEN
+    RAISE EXCEPTION 'invoke_edge_function_async: function % is not allowed', p_name
+      USING ERRCODE = '42501';
+  END IF;
+
   SELECT decrypted_secret INTO v_url
   FROM vault.decrypted_secrets WHERE name = 'project_url' LIMIT 1;
 
@@ -107,7 +145,7 @@ BEGIN
   FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1;
 
   IF v_url IS NULL OR v_key IS NULL THEN
-    RAISE NOTICE
+    RAISE WARNING
       'invoke_edge_function_async(%): project_url / service_role_key not available — skipping',
       p_name;
     RETURN NULL;

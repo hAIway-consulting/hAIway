@@ -7,7 +7,7 @@
 //
 // `connectKind` describes HOW a tenant currently connects this provider:
 //   - "oauth-server-action": existing server action initiates OAuth redirect
-//   - "wizard":              guided form (e.g. Shopware client credentials)
+//   - "wizard":              guided form (e.g. the Twenty CRM setup)
 //   - "oauth-token-grant":   Trello-style 1-click token authorization
 //   - "managed":             set up by hAIway on the platform side, no
 //                            self-service connect flow
@@ -33,7 +33,7 @@ export interface ProviderMeta {
   // Route the "configuring"-state CTA points to (post-auth wizard).
   configuringRoute?: string;
   // Route the "connect" CTA points to for wizard providers that have no
-  // preceding OAuth step (the wizard itself is the entry point, e.g. Shopware).
+  // preceding OAuth step (the wizard itself is the entry point, e.g. Twenty).
   setupRoute?: string;
 }
 
@@ -64,13 +64,6 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     description:  "Telefonassistent (Voice). Eigener API-Key pro Org optional.",
     connectKind:  "managed",
     note:         "Zugang wird plattformseitig hinterlegt (VAPI_API_KEY oder Org-Key). Betrieb über den Telefonassistenten.",
-  },
-  shopware: {
-    color:        "#189eff",
-    description:  "Shopware 6 — Bestellungen, Kunden, Retouren. Auth via Admin-Integration.",
-    connectKind:  "wizard",
-    setupRoute:   "/admin/integrationen/shopware/setup",
-    note:         "Manuell mit Client-ID/Secret aus einer Shopware-Admin-Integration.",
   },
   trello: {
     color:            "#0079bf",

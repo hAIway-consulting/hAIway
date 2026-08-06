@@ -8,10 +8,11 @@
 
 # hAIway Cockpit — Spezifikation
 
-> **Hinweis (Audit vom 2026-08-06):** Skills und Automatisierungen wurden im Zuge des
-> Feature-Audits ersatzlos aus Code und Datenbank entfernt und werden später neu
-> spezifiziert. Die zugehörigen Abschnitte (§7, §8, §10, §17) sind entfallen; die
-> Nummerierung bleibt erhalten, damit Querverweise aus Code und anderen Specs gültig bleiben.
+> **Hinweis (Audit vom 2026-08-06):** Skills, Automatisierungen und die Dokument-Erzeugung
+> wurden im Zuge des Feature-Audits ersatzlos aus Code und Datenbank entfernt und werden
+> später neu spezifiziert. Die zugehörigen Abschnitte (§7, §8, §10, §14, §17) sind
+> entfallen; die Nummerierung bleibt erhalten, damit Querverweise aus Code und anderen
+> Specs gültig bleiben.
 
 ## 1. Zweck & Umbenennung
 
@@ -159,21 +160,25 @@ Sie ist RLS-gesichert (`is_member_of_org`), für den Berater im Dashboard einseh
 
 ## 14. Dokument-Erzeugung
 
-Dokumente (PPTX, XLSX, DOCX, PDF) werden im eigenen Worker erzeugt, unabhängig vom Modellanbieter. Anbieterseitige Doc-Skills können optional als zusätzliches Ausführungs-Backend genutzt werden, wenn ein Tenant ohnehin auf dem entsprechenden Anbieter mit Code-Execution läuft — sind aber nie Voraussetzung.
-
-**Runtime-Entscheidung:** Supabase Edge Functions laufen auf Deno — `python-pptx` & Co. stehen dort nicht zur Verfügung. Für v1 wird der Doc-Worker mit **Node-/Deno-kompatiblen Bibliotheken** umgesetzt (`pptxgenjs` für PPTX, `exceljs` für XLSX, `docx` für DOCX, PDF via HTML-Rendering), angesteuert über eine eigene pgmq-Queue (`render`), Ablage im Storage-Bucket `source-files` (eigener Pfadpräfix), Auslieferung per signierter URL. Ein separater Python-Worker bleibt eine v2-Option, falls Layout-Anforderungen die JS-Bibliotheken übersteigen.
+*Entfallen (Audit vom 2026-08-06).* Der Doc-Worker wurde nie gebaut: es gab weder die
+pgmq-Queue `render` noch einen Renderer, und das Flag `doc_generation` hatte keinen
+einzigen Leser. Flag und Tier-Zuordnungen sind mit
+`20260806180000_drop_cockpit_and_doc_generation_flags.sql` entfernt. Wird bei Bedarf neu
+spezifiziert.
 
 ## 15. Feature-Flags & Plan-Tiers
 
-Neue Flags in `feature_flags` (geseedet), per `org_has_feature()` geprüft und über Plan-Tiers zugeordnet:
+Flags in `feature_flags` (geseedet), per `org_has_feature()` geprüft und über Plan-Tiers
+zugeordnet:
 
 | Key | Bedeutung | Tier-Vorschlag |
 |---|---|---|
-| `cockpit` | Cockpit sichtbar (ersetzt `chat` + `search` in der Navigation) | core |
 | `agent_mode` | Agenten-Modus + gespeicherte Agenten | standard+ |
-| `doc_generation` | Dokument-Erzeugung im Worker | premium+ |
 
-Das Flag `skills` ist mit dem Audit vom 2026-08-06 entfallen.
+Entfallen mit dem Audit vom 2026-08-06: `skills` (Registry gestrichen), `doc_generation`
+(§14) und `cockpit`. Das Cockpit-Flag war als Navigations-Gate gedacht, sobald `/search`
+verschwindet — `/search` ist heute ein Redirect auf `/chat`, das Gate kam nie, und das
+Flag wurde nirgends abgefragt. Das Cockpit ist Kernfunktion und ungegatet sichtbar.
 
 Quoten (Tokens/Monat, Agent-Runs/Tag) leben in `plan_tiers.limits` (JSONB, bestehendes Muster) und werden in §12.3 durchgesetzt.
 
@@ -185,7 +190,7 @@ Quoten (Tokens/Monat, Agent-Runs/Tag) leben in `plan_tiers.limits` (JSONB, beste
 - **Provider-Keys** `ai_provider_keys`: `id`, `organization_id` (NULL = Plattform-Key), `provider`, `encrypted_key`, `constraints` (JSONB, z. B. `{"eu_only": true}`), `status`, `rotated_at`.
 - **Modell-Routing-Konfiguration:** weiterhin `organizations.metadata.ai_settings` (Default-Modell, Embedding-Provider, Provider-Allowlist), referenziert `ai_provider_keys`.
 - **KPI-Aggregation:** `kpi_events` (bestehend) — verbleibender Produzent und Konsument ist der Telefon-Assistent.
-- **Ausführungs-Runtime:** bestehende pgmq-Worker + neue Queue `render` für Dokumente (§14).
+- **Ausführungs-Runtime:** die bestehenden pgmq-Worker (`normalize`, `embed`, `extract`).
 
 Wiederverwendung bestehender Bausteine: `integration_providers`, `sources`, `content_chunks`, `chat_*`, `pgmq`-Worker, `feature_flags`, `plan_tiers`, `kpi_events`, Folder-Permission-Modell.
 
@@ -202,7 +207,7 @@ Wiederverwendung bestehender Bausteine: `integration_providers`, `sources`, `con
 
 ## 19. Offene Entscheidungen
 
-Durch dieses Review entschieden (vormals offen): Agent-Speichern mit Kunden-Review (§9) · Klick-Trigger v1 ohne Parameter (§9) · Doc-Worker-Runtime (§14).
+Durch dieses Review entschieden (vormals offen): Agent-Speichern mit Kunden-Review (§9) · Klick-Trigger v1 ohne Parameter (§9). Die Doc-Worker-Runtime ist mit §14 hinfällig geworden.
 
 Weiterhin offen:
 

@@ -89,7 +89,13 @@ export type CalendarIntegration = {
   organization_id: string;
   provider: string;
   calendar_id: string;
-  refresh_token: string | null;
+  /**
+   * Whether a Google refresh token is stored. The token itself never leaves
+   * the server: 20260806150000 removes refresh_token / access_token from the
+   * column-level GRANT for `authenticated`, so a user client cannot read them
+   * at all.
+   */
+  has_refresh_token: boolean;
   settings: {
     default_duration_minutes: number;
     buffer_minutes: number;
@@ -172,13 +178,19 @@ export async function getCallLogById(id: string): Promise<CallLog | null> {
 export async function getCalendarIntegration(): Promise<CalendarIntegration | null> {
   const orgId = await requireOrgId();
   const db = await createUserClient();
+  // Explicit column list: select("*") would try to read refresh_token /
+  // access_token, which `authenticated` no longer has SELECT on.
   const { data, error } = await db
     .from("calendar_integrations")
-    .select("*")
+    .select("id, organization_id, provider, calendar_id, settings, status, created_at, updated_at")
     .eq("organization_id", orgId)
     .single();
-  if (error) return null;
-  return data;
+  if (error || !data) return null;
+
+  // A row only reaches status 'active' through exchangeGoogleCode (which
+  // stores the refresh token) and disconnectCalendar clears both together —
+  // so the status is the honest, token-free answer to "is it connected?".
+  return { ...data, has_refresh_token: data.status === "active" } as CalendarIntegration;
 }
 
 // ─── STATS ─────────────────────────────────────────────────────────────

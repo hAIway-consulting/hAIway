@@ -16,8 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 //   content_chunks / source_links -> sources
 //   source_folder_access -> source_folders / permission_groups
 //   contacts -> companies
-//   process_instance_steps / process_template_steps have no organization_id;
-//     they are removed via ON DELETE CASCADE from their parents below.
+//   activity_links -> activities
 export const CONTENT_TABLES_IN_DELETE_ORDER = [
   // chat + AI bookkeeping (children first)
   "chat_message_reviews",
@@ -40,13 +39,8 @@ export const CONTENT_TABLES_IN_DELETE_ORDER = [
   "projects",
   "activity_links",
   "activities",
-  "process_instances",
-  "process_templates",
   "kpi_events",
-  "kpi_baselines",
   "connector_sync_log",
-  "entity_mappings",
-  "entities_calendar_events",
   "call_logs",
   // per-member app access (e.g. CRM grants)
   "member_app_permissions",

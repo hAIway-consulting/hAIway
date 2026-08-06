@@ -20,7 +20,7 @@ Das Admin-Dashboard ist die **rein interne**, kundenübergreifende Sicht der Pla
 
 ## 2. Ist-Stand & Einordnung
 
-Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) mit Feature-Toggles und Plan-Tiers, `/admin/integrationen` (Runs, KPI-Tageswerte, DLQ), `/admin/ai-settings`, Branding. Diese Spec erweitert das um die Cockpit-bezogenen Cross-Tenant-Sichten; Tabellen kommen aus der Cockpit-Spec §13/§16.
+Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) mit Feature-Toggles und Plan-Tiers, `/admin/integrationen` (Runs, KPI-Tageswerte, DLQ), `/admin/ai-settings`. Die Branding-Verwaltung ist mit dem Audit vom 2026-08-06 entfallen (nur der Lesepfad für Anzeigename/Kürzel/Logo in der Shell bleibt). Diese Spec erweitert das um die Cockpit-bezogenen Cross-Tenant-Sichten; Tabellen kommen aus der Cockpit-Spec §13/§16.
 
 ## 3. Automatisierungs-Bibliothek (cross-tenant)
 

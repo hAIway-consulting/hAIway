@@ -9,7 +9,7 @@
 
 import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
 import { embedText } from "../_shared/embeddings.ts";
-import { splitIntoChunks, countWords } from "../_shared/chunker.ts";
+import { splitIntoChunks, countWords } from "../_shared/transcript-chunker.ts";
 import { verifyVapiSignature } from "../_shared/vapi-verify.ts";
 
 type VapiEndOfCallReport = {

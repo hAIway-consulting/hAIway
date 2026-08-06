@@ -78,3 +78,12 @@ verify_jwt = true
 
 [functions.connector-sharepoint]
 verify_jwt = true
+
+[functions.worker-normalize]
+verify_jwt = true
+
+[functions.worker-embed]
+verify_jwt = true
+
+[functions.worker-extract-entities]
+verify_jwt = true

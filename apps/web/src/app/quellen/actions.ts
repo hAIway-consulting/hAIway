@@ -2,11 +2,28 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireOrgId } from "@/lib/db/org-context";
+import { requireOrgId, requireBeraterRole } from "@/lib/db/org-context";
 import { createServiceClient } from "@/lib/db/supabase-server";
 import { getAppUrl } from "@/lib/app-url";
 
+// CONNECTOR CREDENTIALS ARE AN ADMIN CONCERN.
+//
+// Every write below lands in organization_integrations.credentials (OAuth
+// refresh tokens, the Trello token) and is executed with createServiceClient(),
+// which bypasses RLS and the column privileges from
+// 20260806130000_security_hardening_and_schema_repair.sql §3. The admin-only
+// RLS policies there are therefore defence in depth only — this role gate is
+// what actually protects the write path, because a Server Action is reachable
+// for every authenticated user regardless of what the page renders.
+//
+// requireBeraterRole() = admin/owner/manager/berater, the same set that opens
+// the Berater persona. In a customer org that is exactly admin/owner.
+// The connect* entry points are gated as well so a regular member is stopped
+// before the OAuth round trip instead of after it; /quellen hides the button
+// for them (page.tsx, canConnect).
+
 export async function connectSharepoint(): Promise<void> {
+  await requireBeraterRole();
   const clientId = process.env.MICROSOFT_CLIENT_ID;
   const tenantId = process.env.MICROSOFT_TENANT_ID || "common";
   if (!clientId) throw new Error("MICROSOFT_CLIENT_ID not set");
@@ -24,6 +41,7 @@ export async function connectSharepoint(): Promise<void> {
 }
 
 export async function connectGdrive(): Promise<void> {
+  await requireBeraterRole();
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) throw new Error("GOOGLE_CLIENT_ID not set");
   const redirectUri = `${await getAppUrl()}/auth/callback/gdrive`;
@@ -45,6 +63,7 @@ export async function connectGdrive(): Promise<void> {
 // URL FRAGMENT (not the query string), so the callback page must be a
 // client component that extracts it from window.location.hash.
 export async function connectTrello(): Promise<void> {
+  await requireBeraterRole();
   const apiKey = process.env.TRELLO_API_KEY;
   if (!apiKey) throw new Error("TRELLO_API_KEY not set on the platform");
   const returnUrl = `${await getAppUrl()}/auth/callback/trello`;
@@ -66,6 +85,7 @@ export async function saveTrelloToken(token: string): Promise<void> {
   if (!token || typeof token !== "string" || token.length < 20) {
     throw new Error("invalid trello token");
   }
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = createServiceClient();
   const { error } = await db
@@ -291,6 +311,7 @@ export async function saveSharepointTokens(tokens: {
   access_token: string;
   expires_in: number;
 }): Promise<void> {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = createServiceClient();
   const expiresAt = new Date(Date.now() + (tokens.expires_in - 60) * 1000).toISOString();
@@ -328,6 +349,7 @@ export async function saveGdriveTokens(tokens: {
   access_token: string;
   expires_in: number;
 }): Promise<void> {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = createServiceClient();
   const expiresAt = new Date(Date.now() + (tokens.expires_in - 60) * 1000).toISOString();

@@ -13,7 +13,12 @@
 // talks to Google Calendar through calendar_integrations +
 // _shared/google-calendar.ts and is unaffected.
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { readBatch, ack, deadLetter, enqueue, queueLength } from "../_shared/queue.ts";
 import { flattenPayloadToText } from "../_shared/normalize.ts";
 
@@ -270,6 +275,13 @@ function splitSheetSection(section: string, maxChars: number): string[] {
 
 Deno.serve(async (req) => {
   try {
+  // verify_jwt only proves that SOME valid token was sent — the public anon
+  // key qualifies. The cron authenticates with the service role key
+  // (20260806150000), so anything else is rejected: draining this queue costs
+  // real IO and downstream embedding budget.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
+
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
 
   // Conditional polling: a single COUNT against pgmq.metrics is much cheaper

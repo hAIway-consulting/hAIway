@@ -23,16 +23,22 @@ export default function AiSettingsForm(props: {
   const [agentBaseUrl, setAgentBaseUrl] = useState(props.initialAgentBaseUrl);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleSave() {
     startTransition(async () => {
-      await saveAiSettings({
+      setError(null);
+      const result = await saveAiSettings({
         system_prompt: prompt.slice(0, MAX_PROMPT),
         tone,
         agent_provider: agentProvider,
         agent_model: agentModel,
         agent_base_url: agentBaseUrl,
       });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     });
@@ -124,10 +130,14 @@ export default function AiSettingsForm(props: {
             type="text"
             value={agentBaseUrl}
             onChange={(e) => setAgentBaseUrl(e.target.value)}
-            placeholder="http://localhost:11434/v1"
+            placeholder="https://api.example.com/v1"
             className={input.base}
             style={styles.input}
           />
+          <p className={input.hint} style={styles.muted}>
+            In Produktion nur https und keine internen Adressen — an diesen Host geht der
+            API-Schlüssel der Plattform.
+          </p>
         </div>
       </div>
 
@@ -144,6 +154,11 @@ export default function AiSettingsForm(props: {
         {saved && (
           <span className="text-sm" style={{ color: "var(--color-accent)" }}>
             Gespeichert.
+          </span>
+        )}
+        {error && (
+          <span className="text-sm" style={{ color: "var(--color-danger)" }}>
+            {error}
           </span>
         )}
       </div>

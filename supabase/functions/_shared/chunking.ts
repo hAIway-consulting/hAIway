@@ -1,4 +1,9 @@
-// Deterministic text chunker for the embed worker.
+// Deterministic text chunker for DOCUMENTS, used by the embed worker.
+//
+// Sibling: ./transcript-chunker.ts chunks phone-call transcripts with larger,
+// word-based windows. The two were reviewed in the 2026-08-06 audit cleanup
+// and kept apart on purpose — see the parameter table at the top of that file
+// for why merging them would change retrieval behaviour.
 //
 // Splits long text into overlapping chunks sized for an embedding model.
 // Strategy (in order):

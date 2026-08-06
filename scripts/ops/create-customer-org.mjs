@@ -5,7 +5,7 @@
 // Run with:
 //   node --env-file=apps/web/.env.local scripts/ops/create-customer-org.mjs \
 //     --slug mamalila --name "mamalila" --owner-email thomas@bernwald.net \
-//     [--plan standard] [--features automations,foo] [--apply]
+//     [--plan standard] [--features agent_mode,crm_workspace] [--apply]
 
 import { createServiceClient, parseFlags, getOrgBySlug, fail } from "./_lib.mjs";
 

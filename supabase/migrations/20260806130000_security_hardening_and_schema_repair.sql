@@ -38,8 +38,17 @@
 -- PostgREST does leave the caller's role behind in two places: the JWT claim
 -- and the `role` GUC set by SET ROLE (SECURITY DEFINER does not reset it).
 --
--- No request context at all (pg_cron, psql, migrations, triggers) means the
--- call is server-side and trusted -> TRUE.
+-- Fail CLOSED. This function is the only thing between a caller and raw
+-- credentials, so the trusted case is stated positively:
+--   * request role = 'service_role'                    -> trusted
+--   * any other request role (anon, authenticated, …)  -> NOT trusted
+--   * no request context at all (pg_cron, psql, migration, trigger body)
+--     -> trusted only when the SESSION user is a server-side role.
+--        session_user survives SECURITY DEFINER (only the user id is
+--        swapped, not the session role), and PostgREST connects as
+--        `authenticator`, which is deliberately not on the list.
+-- "Unknown means trusted" would make the security of every caller depend on
+-- Supabase continuing to set the role GUC the way it does today.
 CREATE OR REPLACE FUNCTION public.is_service_request()
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
@@ -65,11 +74,16 @@ BEGIN
     v_role := NULLIF(NULLIF(current_setting('role', TRUE), ''), 'none');
   END IF;
 
-  IF v_role IS NULL THEN
+  IF v_role = 'service_role' THEN
     RETURN TRUE;
   END IF;
 
-  RETURN v_role = 'service_role';
+  -- An explicit request role that is not service_role is never trusted.
+  IF v_role IS NOT NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN session_user IN ('postgres', 'supabase_admin');
 END;
 $$;
 
@@ -110,8 +124,13 @@ GRANT EXECUTE ON FUNCTION public.is_org_berater(UUID) TO authenticated, service_
 -- Signature and RETURNS TABLE stay byte-identical; only the body gains a
 -- guard. Sole caller is supabase/functions/_shared/integration-registry.ts:23,
 -- which runs on getServiceClient() -> is_service_request() is TRUE there.
--- The is_org_admin() branch keeps a future admin UI working without a second
--- round trip through the service client.
+--
+-- Service role ONLY, deliberately without an is_org_admin() branch: section 3
+-- below removes `credentials` from the column-level GRANT so that not even an
+-- org admin can read OAuth refresh tokens, the Twenty service password or the
+-- Trello token from the table. An admin branch here would hand the same JSONB
+-- back one line later through the RPC. A future admin UI must go through a
+-- server action on the service client and return redacted values.
 CREATE OR REPLACE FUNCTION public.get_org_integration(
   p_org_id UUID,
   p_provider_id TEXT
@@ -125,7 +144,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  IF NOT (public.is_service_request() OR public.is_org_admin(p_org_id)) THEN
+  IF NOT public.is_service_request() THEN
     RAISE EXCEPTION 'get_org_integration: not authorised for organisation %', p_org_id
       USING ERRCODE = '42501';
   END IF;
@@ -152,24 +171,23 @@ GRANT EXECUTE ON FUNCTION public.get_org_integration(UUID, TEXT) TO authenticate
 -- 20260405100000:254ff — SECURITY DEFINER, no search_path, no authorisation.
 -- Returns contact data, recent activities, open processes and the next
 -- appointment for an arbitrary org. Sole caller:
--- supabase/functions/phone-assistant-rag/index.ts:1050 on getServiceClient().
--- The body is untouched so the phone assistant keeps its caller briefing.
+-- supabase/functions/phone-assistant-rag/index.ts on getServiceClient().
+-- The body is untouched here so the phone assistant keeps its caller briefing.
+-- (20260806160000 later recreates it without the process lookup, because the
+-- process model is dropped there; it re-applies exactly these grants.)
 ALTER FUNCTION public.get_caller_context(UUID, TEXT) SET search_path = public;
 REVOKE ALL ON FUNCTION public.get_caller_context(UUID, TEXT)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_caller_context(UUID, TEXT) TO service_role;
 
--- ─── 2c. get_external_entity ───────────────────────────────────────────────
+-- ─── 2c. get_external_entity — NOT HARDENED, DROPPED INSTEAD ───────────────
 --
--- 20260405100000:89-102 — SECURITY DEFINER without a check, hands out
--- entity_mappings.external_data for any org. It currently has zero callers
--- (grep over apps/web/src, supabase/functions, scripts, packages, e2e), so it
--- could equally be dropped; locking it down keeps the option of a future
--- mapping UI without another migration.
-ALTER FUNCTION public.get_external_entity(UUID, TEXT, TEXT, UUID) SET search_path = public;
-REVOKE ALL ON FUNCTION public.get_external_entity(UUID, TEXT, TEXT, UUID)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_external_entity(UUID, TEXT, TEXT, UUID) TO service_role;
+-- 20260405100000:89-102 — SECURITY DEFINER without a check, handing out
+-- entity_mappings.external_data for any org. It has zero callers, and so does
+-- the only table it reads. Hardening it here would mean this migration locks
+-- down a function that 20260806160000_drop_process_and_mapping_model.sql
+-- deletes together with entity_mappings a few minutes later, so the block was
+-- removed. Nothing to do here.
 
 -- ─── 2d. record_kpi_event ──────────────────────────────────────────────────
 --
@@ -178,8 +196,10 @@ GRANT EXECUTE ON FUNCTION public.get_external_entity(UUID, TEXT, TEXT, UUID) TO 
 -- Callers are service-role only:
 --   phone-assistant-call-complete/index.ts:296,311,322
 --   phone-assistant-rag/index.ts:187
--- The second KPI writer, record_time_saved_kpi (20260611140000), writes into
--- kpi_events directly and does not go through this function.
+-- The second KPI writer, record_time_saved_kpi (20260611140000), wrote into
+-- kpi_events directly without going through this function — 20260806110000
+-- drops it in the same rollout, so afterwards record_kpi_event is the only
+-- writer left.
 ALTER FUNCTION public.record_kpi_event(UUID, TEXT, TEXT, NUMERIC, JSONB) SET search_path = public;
 REVOKE ALL ON FUNCTION public.record_kpi_event(UUID, TEXT, TEXT, NUMERIC, JSONB)
   FROM PUBLIC, anon, authenticated;
@@ -253,6 +273,13 @@ GRANT SELECT (
 -- credentials. Replaced by admin-only write policies. Nothing breaks: every
 -- write path in the app uses the service role, which bypasses RLS anyway.
 -- These policies are defence in depth behind the revoked DML privileges.
+--
+-- Because of that bypass the policies alone do NOT protect the real write
+-- path — a Server Action is reachable for any authenticated user. The role
+-- check for those paths lives in the actions themselves (saveTrelloToken,
+-- saveSharepointTokens, saveGdriveTokens in app/quellen/actions.ts and the
+-- wizards under app/admin/integrationen/*/setup), all gated with
+-- requireBeraterRole() in the same commit.
 DROP POLICY IF EXISTS "org_integrations_write" ON public.organization_integrations;
 
 DROP POLICY IF EXISTS "org_integrations_insert" ON public.organization_integrations;
@@ -632,32 +659,68 @@ ALTER TABLE public.organizations
 
 -- SECURITY: adding the column re-arms a privilege escalation. saveAiSettings
 -- (app/admin/ai-settings/actions.ts) writes settings.ai.agent.base_url with a
--- USER client and only checks requireOrgId() — no role check. base_url decides
--- where lib/ai/agent/config.ts sends agent requests, including the platform API
--- key. A plain member must therefore not be able to UPDATE organizations.
+-- USER client behind requireBeraterRole(). base_url decides where
+-- lib/ai/agent/config.ts sends agent requests, including the platform API key.
+-- A plain member must therefore not be able to UPDATE organizations.
 --
 -- Nothing in the migration history ever created an UPDATE policy on
 -- organizations (only "organizations_member_read", 20260401120000:217), which
--- means production carries a hand-made one. Drop whatever UPDATE/ALL policy is
--- there and replace it with an admin-only policy.
+-- means production may carry a hand-made one.
+--
+-- Only policy names this project could plausibly have created are dropped.
+-- An earlier draft dropped every UPDATE/ALL policy it found, which is an
+-- irreversible, unlogged change to a production database — and a cmd='ALL'
+-- policy also covers INSERT/DELETE/SELECT, so removing it would take those
+-- paths away without a replacement. Anything else is reported instead, so the
+-- operator sees it in the push output and can decide.
 DO $$
 DECLARE
   r RECORD;
 BEGIN
   FOR r IN
-    SELECT policyname
+    SELECT policyname, cmd
     FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename  = 'organizations'
       AND cmd IN ('UPDATE', 'ALL')
   LOOP
-    EXECUTE format('DROP POLICY %I ON public.organizations', r.policyname);
+    IF r.policyname IN (
+      'organizations_admin_update',
+      'organizations_berater_update',
+      'organizations_member_write',
+      'organizations_org_all',
+      'organizations_update',
+      'org members write organizations'
+    ) THEN
+      RAISE NOTICE 'dropping known policy % (%) on public.organizations', r.policyname, r.cmd;
+      EXECUTE format('DROP POLICY %I ON public.organizations', r.policyname);
+    ELSE
+      RAISE WARNING
+        'public.organizations carries an unknown %-policy "%" — review it by hand, it is NOT dropped',
+        r.cmd, r.policyname;
+    END IF;
   END LOOP;
 END $$;
 
-CREATE POLICY "organizations_admin_update" ON public.organizations
-  FOR UPDATE USING (public.is_org_admin(id))
-  WITH CHECK (public.is_org_admin(id));
+-- Role set mirrors the app gate: saveAiSettings runs requireBeraterRole()
+-- (BERATER_ROLES = admin/owner/manager/berater, lib/db/org-context.ts:13) and
+-- /admin/ai-settings is reachable for exactly those roles. is_org_admin()
+-- knows only admin/owner, so it would make the form a silent no-op for
+-- manager and berater: PostgREST returns no error for an UPDATE that RLS
+-- filters down to zero rows.
+CREATE POLICY "organizations_berater_update" ON public.organizations
+  FOR UPDATE USING (public.is_org_berater(id))
+  WITH CHECK (public.is_org_berater(id));
+
+-- The policy decides WHICH rows, the column privilege decides WHICH columns.
+-- Without this, "berater may update the org" would also mean "berater may
+-- change plan_id, slug, status or is_platform" — a plan upgrade one PATCH
+-- away. `settings` is the only column any user client writes; everything else
+-- (lib/db/queries/admin.ts, app/admin/actions.ts, admin/api/kunden/route.ts)
+-- goes through createServiceClient(), which bypasses column privileges.
+REVOKE UPDATE ON TABLE public.organizations FROM anon;
+REVOKE UPDATE ON TABLE public.organizations FROM authenticated;
+GRANT UPDATE (settings) ON TABLE public.organizations TO authenticated;
 
 -- ─── 6b. retire the google calendar ingest ─────────────────────────────────
 --
