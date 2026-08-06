@@ -22,8 +22,8 @@ export const model = {
       name: "Benutzer & Berater",
       nodes: [
         { id: "start_login", type: "start", name: "Registrieren / Anmelden", col: 0, row: 0 },
-        { id: "u_onboard", type: "user", name: "Onboarding ausfüllen", col: 2, row: 0 },
-        { id: "u_admin", type: "user", name: "Plattform-Admin: Kunden, Features, Branding, KI-Settings", col: 0, row: 1 },
+        { id: "u_onboard", type: "user", name: "hAIway-Ops: Kunden-Org anlegen (Skript)", col: 2, row: 0 },
+        { id: "u_admin", type: "user", name: "Plattform-Admin: Kunden, Features, KI-Settings", col: 0, row: 1 },
         { id: "u_upload", type: "user", name: "Quelle hochladen (Text / PDF / Audio)", col: 0, row: 2 },
         { id: "u_import", type: "user", name: "Batch-Import (CSV / Excel)", col: 1, row: 2 },
         { id: "u_connect", type: "user", name: "Connector verbinden (SharePoint / GDrive / Trello / Shopware)", col: 0, row: 3 },
@@ -48,12 +48,12 @@ export const model = {
         { id: "a_perm", type: "service", name: "createPermissionGroup / SourceFolder / grantFolderAccess", col: 1, row: 5 },
         { id: "a_phone_cfg", type: "service", name: "createOrUpdateAssistant / toggleAssistantStatus", col: 1, row: 6 },
         { id: "a_cal_exchange", type: "service", name: "getGoogleOAuthUrl / exchangeGoogleCode / saveCalendarSettings", col: 1, row: 7 },
-        { id: "a_branding", type: "service", name: "saveBranding / saveAiSettings", col: 2, row: 1 },
+        { id: "a_ai_settings", type: "service", name: "saveAiSettings", col: 2, row: 1 },
         { id: "a_store_chunks", type: "service", name: "storeChunks · splitIntoChunks + embedBatch", col: 2, row: 2 },
         { id: "a_replay", type: "service", name: "replayJobFailureAction", col: 2, row: 3 },
         { id: "a_save_tokens", type: "service", name: "saveSharepointTokens / saveGdriveTokens / saveTrelloToken", col: 2, row: 4 },
         { id: "a_provision", type: "service", name: "provisionVapiAssistant / syncVapiConfig", col: 2, row: 6 },
-        { id: "a_onboard", type: "service", name: "onboard_organization_v2 aufrufen", col: 3, row: 0 },
+        { id: "a_onboard", type: "service", name: "scripts/ops/create-customer-org.mjs (Ops-Skript)", col: 3, row: 0 },
         { id: "a_send_message", type: "service", name: "sendMessage (RAG-Orchestrierung)", col: 3, row: 1 },
         { id: "a_trigger_sync", type: "service", name: "triggerInitialSync / retrySource / reconcileConnector", col: 3, row: 4 },
         { id: "a_query_prep", type: "service", name: "rewriteFollowUpQuery + expandQuery + resolveEntities", col: 4, row: 1 },
@@ -71,13 +71,9 @@ export const model = {
         { id: "c_sharepoint", type: "service", name: "connector-sharepoint (initial / delta / reconcile)", col: 4, row: 0 },
         { id: "c_gdrive", type: "service", name: "connector-gdrive (initial / delta / reconcile)", col: 4, row: 1 },
         { id: "c_calsync", type: "service", name: "sync-google-calendar", col: 4, row: 2 },
-        { id: "c_imap", type: "service", name: "worker-imap-poll (geplant · 501)", col: 4, row: 3 },
         { id: "c_synclock", type: "service", name: "try_acquire_sync_lock + start_integration_run", col: 5, row: 0 },
         { id: "c_fetch", type: "service", name: "Externe API abrufen (Graph / Drive)", col: 5, row: 1 },
         { id: "c_rawwrite", type: "service", name: "raw_events schreiben + finish_integration_run", col: 5, row: 2 },
-        { id: "c_trello_wb", type: "service", name: "connector-trello (Karte schreiben)", col: 6, row: 0 },
-        { id: "c_shopware", type: "service", name: "connector-shopware (Order / Customer lesen)", col: 6, row: 1 },
-        { id: "c_writeback", type: "service", name: "connector-writeback (rename / delete)", col: 6, row: 2 },
       ],
     },
     // ---------------------------------------------------------------------
@@ -96,7 +92,7 @@ export const model = {
       name: "Datenbank & Orchestrierung (Supabase · pg_cron · RPC · Trigger)",
       nodes: [
         { id: "trg_profile", type: "script", name: "Trigger handle_new_profile → profiles", col: 1, row: 0 },
-        { id: "db_orgs", type: "store", name: "organizations (settings: branding, ai)", col: 2, row: 0 },
+        { id: "db_orgs", type: "store", name: "organizations (settings.ai, metadata.branding)", col: 2, row: 0 },
         { id: "db_jobfail", type: "store", name: "job_failures (Dead-Letter)", col: 2, row: 1 },
         { id: "db_calint", type: "store", name: "calendar_integrations", col: 2, row: 2 },
         { id: "rpc_onboard", type: "script", name: "RPC onboard_organization_v2 → org + members", col: 3, row: 0 },
@@ -144,7 +140,6 @@ export const model = {
         { id: "x_msgraph", type: "service", name: "Microsoft OAuth / Graph API", col: 1, row: 1 },
         { id: "x_google", type: "service", name: "Google OAuth / Drive / Calendar API", col: 1, row: 2 },
         { id: "x_trello", type: "service", name: "Trello API", col: 1, row: 3 },
-        { id: "x_shopware", type: "service", name: "Shopware Admin API", col: 6, row: 1 },
         { id: "x_openai", type: "service", name: "OpenAI (Embeddings · Whisper · GPT-4o-mini)", col: 7, row: 0 },
         { id: "x_anthropic", type: "service", name: "Anthropic (Claude Sonnet / Haiku)", col: 7, row: 1 },
         { id: "x_caller", type: "start", name: "Anrufer wählt Nummer", col: 9, row: 0 },
@@ -156,11 +151,10 @@ export const model = {
 
   // -----------------------------------------------------------------------
   flows: [
-    // --- Auth & Onboarding -------------------------------------------------
+    // --- Auth & Org-Anlage --------------------------------------------------
     { source: "start_login", target: "x_supabase_auth", name: "OTP / Magic Link" },
     { source: "x_supabase_auth", target: "a_auth_callback" },
     { source: "a_auth_callback", target: "trg_profile", name: "neuer User" },
-    { source: "a_auth_callback", target: "u_onboard" },
     { source: "u_onboard", target: "a_onboard" },
     { source: "a_onboard", target: "rpc_onboard" },
     { source: "rpc_onboard", target: "db_orgs" },
@@ -168,8 +162,8 @@ export const model = {
     // --- Platform admin ----------------------------------------------------
     { source: "u_admin", target: "a_admin" },
     { source: "a_admin", target: "db_orgs" },
-    { source: "u_admin", target: "a_branding" },
-    { source: "a_branding", target: "db_orgs" },
+    { source: "u_admin", target: "a_ai_settings" },
+    { source: "a_ai_settings", target: "db_orgs" },
     { source: "u_admin", target: "a_replay" },
     { source: "a_replay", target: "db_jobfail" },
 
@@ -195,9 +189,6 @@ export const model = {
     { source: "a_save_tokens", target: "a_trigger_sync", name: "Initial-Sync" },
     { source: "a_trigger_sync", target: "c_sharepoint" },
     { source: "a_trigger_sync", target: "c_gdrive" },
-    { source: "a_trigger_sync", target: "c_shopware" },
-    { source: "a_trigger_sync", target: "c_trello_wb" },
-    { source: "a_trigger_sync", target: "c_writeback" },
     { source: "a_trigger_sync", target: "q_normalize", name: "retrySource" },
     { source: "c_sharepoint", target: "c_synclock" },
     { source: "c_gdrive", target: "c_synclock" },
@@ -208,10 +199,6 @@ export const model = {
     { source: "c_rawwrite", target: "db_raw" },
     { source: "c_rawwrite", target: "db_runs" },
     { source: "c_rawwrite", target: "q_normalize", name: "enqueue" },
-    { source: "c_shopware", target: "x_shopware" },
-    { source: "c_trello_wb", target: "x_trello" },
-    { source: "c_writeback", target: "x_google" },
-    { source: "c_writeback", target: "rpc_softdelete" },
     { source: "rpc_softdelete", target: "db_sources" },
 
     // --- Cron triggers -----------------------------------------------------

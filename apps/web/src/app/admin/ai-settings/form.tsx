@@ -5,7 +5,6 @@ import { saveAiSettings } from "./actions";
 import { btn, input, styles } from "@/components/ui/table-classes";
 
 type Tone = "formal" | "casual" | "neutral";
-type Lang = "de" | "en";
 type AgentProvider = "" | "anthropic" | "openai-compatible";
 
 const MAX_PROMPT = 4000;
@@ -13,14 +12,12 @@ const MAX_PROMPT = 4000;
 export default function AiSettingsForm(props: {
   initialPrompt: string;
   initialTone: Tone;
-  initialLanguage: Lang;
   initialAgentProvider: AgentProvider;
   initialAgentModel: string;
   initialAgentBaseUrl: string;
 }) {
   const [prompt, setPrompt] = useState(props.initialPrompt);
   const [tone, setTone] = useState<Tone>(props.initialTone);
-  const [language, setLanguage] = useState<Lang>(props.initialLanguage);
   const [agentProvider, setAgentProvider] = useState<AgentProvider>(props.initialAgentProvider);
   const [agentModel, setAgentModel] = useState(props.initialAgentModel);
   const [agentBaseUrl, setAgentBaseUrl] = useState(props.initialAgentBaseUrl);
@@ -32,7 +29,6 @@ export default function AiSettingsForm(props: {
       await saveAiSettings({
         system_prompt: prompt.slice(0, MAX_PROMPT),
         tone,
-        language,
         agent_provider: agentProvider,
         agent_model: agentModel,
         agent_base_url: agentBaseUrl,
@@ -62,36 +58,20 @@ export default function AiSettingsForm(props: {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-2">
-          <label className={input.label} style={{ color: "var(--color-text)" }}>
-            Tonalitaet
-          </label>
-          <select
-            value={tone}
-            onChange={(e) => setTone(e.target.value as Tone)}
-            className={input.base}
-            style={styles.input}
-          >
-            <option value="neutral">Neutral</option>
-            <option value="formal">Sachlich-Formell</option>
-            <option value="casual">Locker</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className={input.label} style={{ color: "var(--color-text)" }}>
-            Sprache
-          </label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Lang)}
-            className={input.base}
-            style={styles.input}
-          >
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-          </select>
-        </div>
+      <div className="flex flex-col gap-2">
+        <label className={input.label} style={{ color: "var(--color-text)" }}>
+          Tonalitaet
+        </label>
+        <select
+          value={tone}
+          onChange={(e) => setTone(e.target.value as Tone)}
+          className={input.base}
+          style={styles.input}
+        >
+          <option value="neutral">Neutral</option>
+          <option value="formal">Sachlich-Formell</option>
+          <option value="casual">Locker</option>
+        </select>
       </div>
 
       {/* Agentic model (tool-calling) — pluggable provider incl. local */}

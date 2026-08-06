@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getOrganizationAdmin, listPlanTiers, getOrgIntegrations } from "@/lib/db/queries/admin";
+import { isPlatformAdmin } from "@/lib/db/queries/organization";
 import { updateOrganization, toggleFeature, resetFeature, inviteMember } from "../../actions";
 import { FeatureToggle } from "./feature-toggle";
 import { InviteForm } from "./invite-form";
@@ -9,6 +10,11 @@ export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
 
 export default async function KundeDetailPage({ params }: Props) {
+  // Cross-tenant view: STRICT platform gate — the soft /admin layout gate lets
+  // Berater/Org-Admins through and must not be relied on here. This page renders
+  // the member list of a FOREIGN org including profile e-mails.
+  if (!(await isPlatformAdmin().catch(() => false))) redirect("/");
+
   const { id } = await params;
   const [org, planTiers, integrations] = await Promise.all([
     getOrganizationAdmin(id),

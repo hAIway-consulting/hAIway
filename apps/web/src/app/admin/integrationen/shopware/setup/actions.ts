@@ -19,10 +19,9 @@ function backToSetup(params: { base_url: string; client_id: string; error: strin
   redirect(`${SETUP_ROUTE}?${q.toString()}`);
 }
 
-// Verifies the integration credentials directly against the shop. Mirrors the
-// auth handshake in supabase/functions/_shared/shopware.ts#fetchToken — that
-// Deno edge module cannot be imported here, so we re-implement the minimal
-// token + sample-read against the Admin API.
+// Verifies the integration credentials directly against the shop: a minimal
+// OAuth client-credentials token request plus one sample read against the
+// Shopware Admin API.
 async function testShopwareConnection(
   baseUrl: string,
   clientId: string,

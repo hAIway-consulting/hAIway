@@ -353,6 +353,8 @@ function ConnectorCard(props: {
           ) : (
             <>
               <SyncButton providerId={providerId} />
+              {/* Aufräumen nur für Google Drive: connector-sharepoint kennt keine
+                  'reconcile'-Aktion (siehe actions.ts, reconcileConnector). */}
               {providerId === "google_drive" && <ReconcileButton providerId={providerId} />}
             </>
           )}

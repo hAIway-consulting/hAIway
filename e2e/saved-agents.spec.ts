@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-// Saved agents (docs/spec-cockpit.md §9). Until the foundation migration is
-// pushed, the workspace home falls back to the four STUB_AGENTS — this spec
-// asserts the tile grid renders and that a tile click starts a conversation.
+// Saved agents (docs/spec-cockpit.md §9). The agent tiles come exclusively
+// from the `saved_agents` table — the seed in the migration
+// 20260611122000_cockpit_flags_and_seeds.sql is a precondition for this spec.
 // Uses the "max" persona (member role) because only members see the
 // Workspace-Home with agent tiles.
 
@@ -16,7 +16,14 @@ test("workspace home renders agent tiles and a click starts a conversation", asy
   expect(response?.status(), "test-login must succeed (404 means NODE_ENV != development)").toBeLessThan(400);
   await expect(page).not.toHaveURL(/\/auth\/anmelden/);
 
-  // At least one agent tile renders (stub fallback pre-migration, DB rows after).
+  // Fail loudly with a readable message when the seed is missing instead of
+  // running into a bare selector timeout.
+  await expect(
+    page.getByText("Noch keine Agenten hinterlegt"),
+    "saved_agents seed missing — run the migrations against the test DB",
+  ).toHaveCount(0);
+
+  // At least one agent tile renders (seeded saved_agents row).
   const tile = page.getByRole("button", { name: /Angebot entwerfen/ });
   await expect(tile).toBeVisible();
 

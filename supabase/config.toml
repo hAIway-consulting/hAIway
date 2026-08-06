@@ -63,3 +63,18 @@ verify_jwt = false
 
 [functions.phone-assistant-call-complete]
 verify_jwt = false
+
+# Server-to-server only. verify_jwt = true is the platform default, but stating
+# it makes explicit that these functions are NOT public. verify_jwt alone is not
+# enough authorization though — it only proves that SOME valid token was sent
+# (the public anon key qualifies). The real check is requireServiceRole() in
+# supabase/functions/_shared/supabase.ts, which every one of these handlers runs
+# as its first statement.
+[functions.connector-twenty]
+verify_jwt = true
+
+[functions.connector-gdrive]
+verify_jwt = true
+
+[functions.connector-sharepoint]
+verify_jwt = true

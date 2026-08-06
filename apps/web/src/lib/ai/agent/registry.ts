@@ -4,12 +4,6 @@
 // only happens via the UI confirmation flow ({ confirm: true } injected by
 // confirmAgentAction) and never deletes — only moves.
 
-import { createServiceClient } from "@/lib/db/supabase-server";
-import {
-  listAutomations,
-  listWorkflowRuns,
-} from "@/lib/db/queries/workflows";
-import { WORKFLOW_KEY } from "@/lib/orchestrator/run-complaint";
 import { getTrelloConfig } from "@/lib/orchestrator/credentials";
 import {
   listOpenCards,
@@ -51,66 +45,6 @@ export function filterToolsForRole(
 }
 
 export const AGENT_TOOLS: AgentTool[] = [
-  {
-    name: "get_automation_overview",
-    access: "read",
-    description:
-      "Liefert alle Automatisierungen der Organisation mit Status (aktiv/inaktiv) und KPIs " +
-      "(Tickets gesamt, erfolgreich, fehlgeschlagen, Erfolgsquote). Nutze dies für Fragen wie " +
-      "„welche Automatisierungen laufen“ oder „wie viele Reklamationen gab es“.",
-    parameters: { type: "object", properties: {}, additionalProperties: false },
-    handler: async (_input, ctx) => {
-      const autos = await listAutomations(ctx.orgId);
-      return autos.map((a) => ({
-        name:          a.name,
-        description:   a.description,
-        active:        a.active,
-        tickets_total: a.kpi.total,
-        succeeded:     a.kpi.success,
-        failed:        a.kpi.failed,
-        success_rate:  a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null,
-        last_run_at:   a.kpi.last_run_at,
-      }));
-    },
-  },
-  {
-    name: "list_complaint_cases",
-    access: "read",
-    description:
-      "Listet einzelne Reklamationsfälle (Shopware→Trello-Läufe) mit Kunde, Produkt, Status, " +
-      "Datum und Trello-Karten-Link. Für Auswertungen aller Reklamationsfälle.",
-    parameters: {
-      type: "object",
-      properties: {
-        limit:  { type: "integer", description: "Maximale Anzahl (Default 50)." },
-        status: { type: "string", enum: ["success", "failed", "running"], description: "Optionaler Status-Filter." },
-      },
-      additionalProperties: false,
-    },
-    handler: async (input, ctx) => {
-      const limit = typeof input.limit === "number" ? input.limit : 50;
-      const status = typeof input.status === "string" ? input.status : null;
-      const runs = await listWorkflowRuns(ctx.orgId, 200);
-      let cases = runs.filter((r) => r.workflow_key === WORKFLOW_KEY);
-      if (status) cases = cases.filter((r) => r.status === status);
-      cases = cases.slice(0, limit);
-      return {
-        count: cases.length,
-        cases: cases.map((r) => {
-          const src = r.source_ref as { customer_name?: string; product_name?: string } | null;
-          return {
-            status:    r.status,
-            date:      r.started_at,
-            customer:  src?.customer_name ?? null,
-            product:   src?.product_name ?? null,
-            card_url:  r.target_ref?.url ?? null,
-            error:     r.error_message ?? null,
-            simulated: r.trigger === "simulated",
-          };
-        }),
-      };
-    },
-  },
   {
     name: "list_trello_cards",
     access: "read",
@@ -187,36 +121,13 @@ export const AGENT_TOOLS: AgentTool[] = [
         };
       }
 
-      // Execute (reversible: only moves).
-      const started = Date.now();
+      // Execute (reversible: only moves). The tool call itself is already
+      // logged in agent_runs.tool_calls — no extra audit row needed.
       const targetList = existingTarget ?? (await createList(cfg, targetName));
       let moved = 0;
       for (const c of stale) {
         await moveCard(cfg, c.id, targetList.id);
         moved++;
-      }
-
-      // Audit as a workflow_runs row (own workflow_key — doesn't affect complaint KPIs).
-      try {
-        const db = createServiceClient();
-        await db.from("workflow_runs").insert({
-          organization_id: ctx.orgId,
-          workflow_key:    "trello_cleanup",
-          status:          "success",
-          trigger:         "manual",
-          started_at:      new Date(started).toISOString(),
-          finished_at:     new Date().toISOString(),
-          duration_ms:     Date.now() - started,
-          steps: [
-            { key: "scan", label: "Trello-Karten scannen", status: "success", detail: `${cards.length} Karten geprüft` },
-            { key: "categorize", label: `Kategorie „${targetName}" + verschieben`, status: "success", detail: `${moved} verschoben` },
-          ],
-          source_ref:  { months },
-          target_ref:  { list: targetName, moved },
-          created_by:  ctx.userId ?? null,
-        });
-      } catch {
-        /* audit is best-effort */
       }
 
       return { applied: true, target_list: targetName, moved, cards: preview };

@@ -8,15 +8,16 @@
 // `connectKind` describes HOW a tenant currently connects this provider:
 //   - "oauth-server-action": existing server action initiates OAuth redirect
 //   - "wizard":              guided form (e.g. Shopware client credentials)
-//   - "credentials-form":    plain username/password form (e.g. IMAP)
 //   - "oauth-token-grant":   Trello-style 1-click token authorization
+//   - "managed":             set up by hAIway on the platform side, no
+//                            self-service connect flow
 //   - "coming-soon":         no adapter yet — disabled with explainer
 
 export type ConnectKind =
   | "oauth-server-action"
   | "wizard"
-  | "credentials-form"
   | "oauth-token-grant"
+  | "managed"
   | "coming-soon";
 
 export interface ProviderMeta {
@@ -54,14 +55,15 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
   google_calendar: {
     color:        "#1A73E8",
     description:  "Termine + Slot-Verfügbarkeit für den Telefonassistenten.",
-    connectKind:  "coming-soon",
-    note:         "OAuth-Flow wird in einem späteren PR ergänzt.",
+    connectKind:  "oauth-server-action",
+    setupRoute:   "/telefon-assistent/kalender",
+    note:         "Verbinden und Status im Telefonassistenten unter „Kalender“.",
   },
   vapi: {
     color:        "#19c37d",
     description:  "Telefonassistent (Voice). Eigener API-Key pro Org optional.",
-    connectKind:  "coming-soon",
-    note:         "Setup-Wizard folgt.",
+    connectKind:  "managed",
+    note:         "Zugang wird plattformseitig hinterlegt (VAPI_API_KEY oder Org-Key). Betrieb über den Telefonassistenten.",
   },
   shopware: {
     color:        "#189eff",
@@ -78,12 +80,6 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     configuringRoute: "/admin/integrationen/trello/setup",
     note:             "Nach dem Verbinden Board + Liste auswählen.",
   },
-  imap_inbox: {
-    color:        "#7d8da1",
-    description:  "Generisches IMAP-Postfach (z.B. selbstgehostete Mail). User/Pass.",
-    connectKind:  "credentials-form",
-    note:         "Formular + Connection-Test folgt im nächsten PR.",
-  },
   twenty: {
     color:            "#1961ed",
     description:      "Selbst gehostetes Twenty CRM — Zugänge + Rollen werden automatisch synchronisiert.",
@@ -93,16 +89,6 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     note:             "Einrichtung + Zugriffsverwaltung unter CRM-Zugänge. Betrieb: docs/crm-twenty.md",
   },
 };
-
-// Virtual providers are UI-only cards that piggyback on another provider's
-// connection row. Empty for now; structure stays so we can re-introduce
-// without touching the rendering loop.
-export const VIRTUAL_PROVIDERS: Array<{
-  id:          string;
-  name:        string;
-  meta:        ProviderMeta;
-  statusFrom:  string;
-}> = [];
 
 export function metaFor(providerId: string): ProviderMeta {
   return PROVIDER_META[providerId] ?? {
@@ -116,8 +102,8 @@ export function connectKindLabel(kind: ConnectKind): string {
   switch (kind) {
     case "oauth-server-action": return "OAuth 2.0";
     case "wizard":              return "Geführter Wizard";
-    case "credentials-form":    return "Benutzerdaten";
     case "oauth-token-grant":   return "Token-Authorize";
+    case "managed":             return "Von hAIway eingerichtet";
     case "coming-soon":         return "In Vorbereitung";
   }
 }

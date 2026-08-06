@@ -46,15 +46,6 @@ export function IconTrash({ size = 20 }: { size?: number }) {
   );
 }
 
-export function IconSearch({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
-
 export function IconChat({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -88,16 +79,6 @@ export function IconAdmin({ size = 20 }: { size?: number }) {
   );
 }
 
-export function IconLogout({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
 export function IconUsers({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -119,16 +100,6 @@ export function IconChart({ size = 20 }: { size?: number }) {
   );
 }
 
-export function IconBox({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      <line x1="12" y1="22.08" x2="12" y2="12" />
-    </svg>
-  );
-}
-
 export function IconPlug({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -136,21 +107,6 @@ export function IconPlug({ size = 20 }: { size?: number }) {
       <path d="M15 2v6" />
       <path d="M6 8h12v4a6 6 0 01-12 0V8z" />
       <path d="M12 18v4" />
-    </svg>
-  );
-}
-
-export function IconBuilding({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <line x1="9" y1="6" x2="9" y2="6" />
-      <line x1="15" y1="6" x2="15" y2="6" />
-      <line x1="9" y1="10" x2="9" y2="10" />
-      <line x1="15" y1="10" x2="15" y2="10" />
-      <line x1="9" y1="14" x2="9" y2="14" />
-      <line x1="15" y1="14" x2="15" y2="14" />
-      <path d="M10 22v-4h4v4" />
     </svg>
   );
 }
@@ -274,31 +230,6 @@ export function NavGroupBlock({ group }: { group: NavGroup }) {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-export function NavLogout() {
-  return (
-    <div className="mt-auto pt-2">
-      <form action="/auth/abmelden" method="POST">
-        <button
-          type="submit"
-          className="flex items-center gap-2.5 min-h-[40px] px-3 rounded-xl text-[13px] font-medium w-full transition-all"
-          style={{ color: "var(--color-muted)" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--color-bg-elevated)";
-            e.currentTarget.style.color = "var(--color-text)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "var(--color-muted)";
-          }}
-        >
-          <IconLogout size={18} />
-          Abmelden
-        </button>
-      </form>
     </div>
   );
 }

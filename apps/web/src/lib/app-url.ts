@@ -69,12 +69,3 @@ export async function getAppUrl(): Promise<string> {
   // Prod/Preview: explicit > headers > VERCEL_URL > localhost.
   return fromExplicit() ?? (await fromHeaders()) ?? fromVercelUrl() ?? "http://localhost:3000";
 }
-
-/**
- * Synchronous fallback for places without a request context (cron-job
- * scaffolding, build-time constants). Skips header lookup; if you have a
- * request, prefer `getAppUrl()`.
- */
-export function getAppUrlSync(): string {
-  return fromExplicit() ?? fromVercelUrl() ?? "http://localhost:3000";
-}

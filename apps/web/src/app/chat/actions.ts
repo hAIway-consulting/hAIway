@@ -277,18 +277,6 @@ export async function getConversation(id: string): Promise<{
   };
 }
 
-export async function renameConversation(id: string, title: string): Promise<void> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { error } = await db
-    .from("chat_conversations")
-    .update({ title: title.slice(0, 200) })
-    .eq("id", id)
-    .eq("organization_id", orgId);
-  if (error) throw error;
-  revalidatePath("/chat", "layout");
-}
-
 export async function deleteConversation(id: string): Promise<void> {
   const orgId = await requireOrgId();
   const db = await createUserClient();

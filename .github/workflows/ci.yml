@@ -22,7 +22,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Single source of truth: /.nvmrc (currently 20). CI used to pin 22,
+          # which meant local development and CI ran different majors.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -33,3 +35,28 @@ jobs:
 
       - name: Lint
         run: npm run lint --workspace apps/web
+
+      - name: Build
+        run: npm run build --workspace apps/web
+        env:
+          # `next build` loads modules while collecting page data, and
+          # apps/web/src/lib/db/supabase-server.ts reads these at module level.
+          # Placeholders are enough — no Supabase is contacted during the build
+          # (every data page is `export const dynamic = "force-dynamic"`).
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      # e2e is deliberately NOT part of this workflow:
+      #   * playwright.config.ts has no `webServer` block — CI would have to
+      #     orchestrate build + start + health-wait itself.
+      #   * /api/dev/test-login is 404 outside NODE_ENV=development, so the
+      #     suite only works against `next dev` — slow and flaky in CI.
+      #   * the specs need a live Supabase with the claude-test sandbox org and
+      #     they mutate real rows (crm.spec.ts is describe.serial and does
+      #     grant -> reconcile -> revoke), so parallel PR runs would collide.
+      #   * it would require the TEST_LOGIN_* credentials as repo secrets —
+      #     exactly the credential spread this audit removed.
+      # Run it locally, or add a separate workflow_dispatch job against a
+      # dedicated staging project.

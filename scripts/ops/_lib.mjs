@@ -6,10 +6,27 @@ import { createClient } from "@supabase/supabase-js";
 // Org-scoped content tables in FK-safe delete order (child rows before parents).
 // Superset of scripts/dev-loop/cleanup-test-org.mjs plus the pipeline tables.
 // Tables without an organization_id column are skipped gracefully by callers.
+//
+// Ordering constraints that actually matter:
+//   chat_message_reviews -> chat_messages -> chat_conversations
+//   ai_usage_events.ref_id points at chat_messages / agent_runs without an FK,
+//     so it goes first — the pointers must not outlive their targets.
+//   agent_runs.conversation_id -> chat_conversations, .saved_agent_id ->
+//     saved_agents; saved_agents.source_conversation_id -> chat_conversations.
+//   content_chunks / source_links -> sources
+//   source_folder_access -> source_folders / permission_groups
+//   contacts -> companies
+//   process_instance_steps / process_template_steps have no organization_id;
+//     they are removed via ON DELETE CASCADE from their parents below.
 export const CONTENT_TABLES_IN_DELETE_ORDER = [
+  // chat + AI bookkeeping (children first)
   "chat_message_reviews",
+  "ai_usage_events",
+  "agent_runs",
+  "saved_agents",
   "chat_messages",
   "chat_conversations",
+  // knowledge base
   "content_chunks",
   "source_links",
   "source_folder_access",
@@ -17,15 +34,12 @@ export const CONTENT_TABLES_IN_DELETE_ORDER = [
   "permission_group_members",
   "permission_groups",
   "sources",
-  "entity_tags",
-  "tags",
+  // operative data
   "contacts",
   "companies",
   "projects",
   "activity_links",
   "activities",
-  // process_instance_steps / process_template_steps have no organization_id;
-  // they are removed via ON DELETE CASCADE from their parents below.
   "process_instances",
   "process_templates",
   "kpi_events",
@@ -34,6 +48,8 @@ export const CONTENT_TABLES_IN_DELETE_ORDER = [
   "entity_mappings",
   "entities_calendar_events",
   "call_logs",
+  // per-member app access (e.g. CRM grants)
+  "member_app_permissions",
   // pipeline tables (Bronze + run bookkeeping)
   "raw_events",
   "integration_runs",
@@ -44,8 +60,12 @@ export const CONTENT_TABLES_IN_DELETE_ORDER = [
 
 // Config/infrastructure tables are only wiped when explicitly requested
 // (--include-config): for the platform org these hold real integration
-// credentials and live phone/calendar wiring.
+// credentials, encrypted model keys and live phone/calendar wiring.
+// ai_provider_keys.organization_id is NULLABLE (NULL = platform-wide key); the
+// callers filter by .eq("organization_id", orgId), so platform keys are never
+// touched by an org wipe.
 export const CONFIG_TABLES_IN_DELETE_ORDER = [
+  "ai_provider_keys",
   "calendar_integrations",
   "phone_numbers",
   "phone_assistants",

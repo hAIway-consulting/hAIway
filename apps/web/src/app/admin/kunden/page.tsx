@@ -1,9 +1,15 @@
 import { listOrganizations } from "@/lib/db/queries/admin";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/db/queries/organization";
 
 export const dynamic = 'force-dynamic';
 
 export default async function KundenPage() {
+  // Cross-tenant view: STRICT platform gate — the soft /admin layout gate lets
+  // Berater/Org-Admins through and must not be relied on here.
+  if (!(await isPlatformAdmin().catch(() => false))) redirect("/");
+
   const orgs = await listOrganizations();
 
   return (

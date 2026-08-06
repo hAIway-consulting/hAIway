@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { createUserClient } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
-import { listAutomations } from "@/lib/db/queries/workflows";
-import { Empty, Panel, StatCard, formatMinutes } from "../ui";
+import { Empty, Panel, StatCard } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +11,6 @@ const QUOTA_WARN_THRESHOLD = 0.8;
 const PURPOSE_LABELS: Record<string, string> = {
   chat: "Chat",
   agent: "Agent",
-  skill: "Skill",
-  automation: "Automatisierung",
   embedding: "Embedding",
 };
 
@@ -88,41 +85,21 @@ async function getTokenLimit(orgId: string): Promise<number | null> {
   }
 }
 
-/** Sum of kpi_events time_saved values (minutes), org-scoped via RLS. */
-async function getTimeSavedMinutes(orgId: string): Promise<number> {
-  try {
-    const db = await createUserClient();
-    const { data, error } = await db
-      .from("kpi_events")
-      .select("value")
-      .eq("organization_id", orgId)
-      .eq("event_type", "time_saved")
-      .limit(1000);
-    if (error || !data) return 0;
-    return data.reduce((sum, row) => sum + Number((row as { value: unknown }).value ?? 0), 0);
-  } catch {
-    return 0;
-  }
-}
-
 function formatEuro(cents: number): string {
   return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
 /**
- * Nutzung & Kosten (berater spec §7): 30-day usage from ai_usage_daily,
- * monthly quota vs. plan limit (80% warning), and the outcome view
- * ("Ergebnis statt Feature": saved time). Model routing itself stays on
- * /admin/ai-settings.
+ * Nutzung & Kosten (berater spec §7): 30-day usage from ai_usage_daily plus
+ * the monthly quota vs. plan limit (80% warning). Model routing itself stays
+ * on /admin/ai-settings.
  */
 export default async function CockpitModellePage() {
   const orgId = await requireOrgId();
-  const [usage, monthUsage, tokenLimit, kpiTimeSaved, automations] = await Promise.all([
+  const [usage, monthUsage, tokenLimit] = await Promise.all([
     listUsageDaily(orgId),
     getMonthUsage(orgId),
     getTokenLimit(orgId),
-    getTimeSavedMinutes(orgId),
-    listAutomations(orgId).catch(() => []),
   ]);
 
   const total = emptyAgg();
@@ -142,11 +119,6 @@ export default async function CockpitModellePage() {
     monthUsage && tokenLimit ? Math.min(100, Math.round((monthUsage.tokens / tokenLimit) * 100)) : null;
   const quotaWarning =
     monthUsage != null && tokenLimit != null && monthUsage.tokens >= tokenLimit * QUOTA_WARN_THRESHOLD;
-
-  const automationMinutes = automations.reduce(
-    (sum, a) => sum + a.minutesSavedPerRun * a.kpi.success,
-    0,
-  );
 
   return (
     <div className="flex flex-col gap-5 md:gap-6">
@@ -219,30 +191,6 @@ export default async function CockpitModellePage() {
             )}
           </div>
         )}
-      </Panel>
-
-      <Panel title="Ergebnis statt Feature — eingesparte Zeit">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-xl p-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line-soft)" }}>
-            <p className="text-[11px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-              Aus KPI-Events (time_saved)
-            </p>
-            <p className="text-xl font-bold mt-1" style={{ fontFamily: "var(--font-display)", color: "var(--color-success)" }}>
-              {formatMinutes(kpiTimeSaved)}
-            </p>
-          </div>
-          <div className="rounded-xl p-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line-soft)" }}>
-            <p className="text-[11px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-              Aus Automatisierungen (live)
-            </p>
-            <p className="text-xl font-bold mt-1" style={{ fontFamily: "var(--font-display)", color: "var(--color-success)" }}>
-              {formatMinutes(automationMinutes)}
-            </p>
-          </div>
-        </div>
-        <p className="text-xs mt-3" style={{ color: "var(--color-muted)" }}>
-          Dieselben Werte sieht der Kunde im Cockpit — keine zwei Wahrheiten.
-        </p>
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">

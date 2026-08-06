@@ -91,12 +91,12 @@ Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere du
 
 **Test-Daten — Sandbox-Org `claude-test`:**
 - Org-ID: `c20b8a68-363c-4df9-9409-bbf1a881b072` (Slug `claude-test`, Name `[CLAUDE-TEST] Sandbox`).
-- Tester-Login: `claude-tester@bernwald.net` / `Test1234!` (Rolle `admin`, `is_default=true`).
+- Tester-Login: E-Mail und Passwort stehen ausschliesslich in `apps/web/.env.local` unter `TEST_LOGIN_CLAUDE_TESTER_EMAIL` / `TEST_LOGIN_CLAUDE_TESTER_PASSWORD` (Rolle `admin`, `is_default=true`). Niemals ins Repo schreiben.
 - Setup neu/idempotent: `node --env-file=apps/web/.env.local scripts/dev-loop/setup-test-org.mjs`
 - Aufraeumen nach jedem Iterationsblock: `node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs` — wischt alle org-gescopeten Tabellen, laesst Org/User/Profile/Member stehen.
 - **Niemals gegen `time-keeper` (Prod-Org) testen.** Cleanup-Skript verweigert das aktiv.
 
-**Login im Test:** `GET /api/dev/test-login?user=claude-tester&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404).
+**Login im Test:** `GET /api/dev/test-login?user=claude-tester&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404). Fehlen die `TEST_LOGIN_*`-Variablen, antwortet der Endpoint mit 503 statt still auf ein bekanntes Passwort zurueckzufallen.
 
 **Eskalation an User (Loop sofort stoppen, kurz melden):**
 - Mehr als **5 Iterationen** fuer denselben Bug
@@ -147,6 +147,20 @@ ANTHROPIC_API_KEY=          # in Vercel NICHT gesetzt; Edge-Functions ziehen ihn
 AI_KEYS_ENCRYPTION_SECRET=  # verschluesselt ai_provider_keys (AES-256-GCM). In Vercel UND Supabase
                             # Function Secrets identisch setzen. ACHTUNG: Verlust brickt gespeicherte
                             # Tenant-Keys (Env-Fallback haelt die Plattform am Leben, Keys neu erfassen).
+```
+
+Nur lokal (`apps/web/.env.local`) — **niemals in Vercel-Production und niemals ins Repo**.
+Ohne sie antwortet `/api/dev/test-login` mit 503 und die e2e-Specs scheitern mit
+klarer Meldung; `create-sandbox-org.mjs` bricht mit Hinweis ab.
+
+```
+TEST_LOGIN_CLAUDE_TESTER_EMAIL=     # Sandbox-Tester (Persona "berater")
+TEST_LOGIN_CLAUDE_TESTER_PASSWORD=
+TEST_LOGIN_MAX_EMAIL=               # Prod-Mitglied (Persona "workspace")
+TEST_LOGIN_MAX_PASSWORD=
+TEST_LOGIN_ANNA_EMAIL=              # Prod-Mitglied (Persona "workspace")
+TEST_LOGIN_ANNA_PASSWORD=
+SANDBOX_TESTER_PASSWORD=            # fuer scripts/ops/create-sandbox-org.mjs
 ```
 
 ## Agent-Workflow-Regeln

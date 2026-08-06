@@ -306,22 +306,6 @@ export async function getOrgIntegrations(orgId: string): Promise<AdminOrgIntegra
   }));
 }
 
-export async function updateOrgIntegrationStatus(
-  integrationId: string,
-  status: string,
-  errorMessage?: string,
-) {
-  const db = createServiceClient();
-  await db
-    .from("organization_integrations")
-    .update({
-      status,
-      error_message: errorMessage ?? null,
-      last_synced_at: new Date().toISOString(),
-    })
-    .eq("id", integrationId);
-}
-
 // ─── EXISTING ────────────────────────────────────────────────────────────
 
 export async function updateOrgMemberRole(orgId: string, memberId: string, role: string) {

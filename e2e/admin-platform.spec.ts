@@ -9,8 +9,6 @@ import { test, expect } from "@playwright/test";
 const PLATFORM_ADMIN_PAGES = [
   "/admin/ai-keys",
   "/admin/ai-kosten",
-  "/admin/bibliothek/automatisierungen",
-  "/admin/bibliothek/skills",
 ];
 
 for (const target of PLATFORM_ADMIN_PAGES) {

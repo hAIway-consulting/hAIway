@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
 import { listMyConversations } from "@/app/chat/actions";
 import { HeroAsk } from "./hero-ask";
-import { launchApp } from "./actions";
 
 type Customer = {
   id: string;
@@ -18,44 +17,15 @@ type OutcomeAggregate = {
   source_growth: number;
 };
 
-// Stub-App-Inventar — bis der App-Builder steht (siehe
-// project_haiway_internal_app_marketplace memory).
-const APP_INVENTORY = [
-  {
-    id: "pilot-brief",
-    name: "Pilot-Status-Brief",
-    description: "Wöchentlicher Outcome-Bericht je Pilotkunde, automatisch generiert.",
-    kind: "no-code" as const,
-    status: "läuft",
-  },
-  {
-    id: "kaufen-bauen",
-    name: "Kaufen-vs-bauen",
-    description: "Vergleicht externe SaaS-Optionen gegen interne Eigenbauten — pro Bedarf.",
-    kind: "no-code" as const,
-    status: "in Aufbau",
-  },
-  {
-    id: "crm-sync",
-    name: "CRM-Sync (HubSpot)",
-    description: "TypeScript-App: spiegelt HubSpot-Kontakte in unser Datenlayer.",
-    kind: "typescript" as const,
-    status: "extern · HubSpot · evaluieren",
-  },
-];
-
 /**
- * HAIway-internes Mission Control — App-Marketplace + eigener Workspace.
+ * HAIway-internes Mission Control — eigener Workspace + Operating Picture.
  *
- * Drei Hauptelemente:
+ * Zwei Hauptelemente:
  *  1. **Eigener Workspace** (Hero-Frage) — wir arbeiten selbst agentisch,
  *     statt manuell. Eigene Chat-History.
- *  2. **App-Inventar** — interne Apps anlegen, starten, Telemetrie sehen.
- *     Apps sind entweder No-Code (Pre-Prompt + Datenquellen) oder
- *     TypeScript-Komponenten im Repo.
- *  3. **Operating Picture** — Pilotkunden + Outcome auf einen Blick.
+ *  2. **Operating Picture** — Pilotkunden + Outcome auf einen Blick.
  *
- * Hintergrund: project_haiway_internal_app_marketplace, project_internal_roles.
+ * Hintergrund: project_internal_roles.
  */
 export async function HaiwayMission() {
   const user = await getUser();
@@ -67,14 +37,11 @@ export async function HaiwayMission() {
     firstName = cleaned.split(/\s+/)[0] ?? "";
   }
 
-  const [conversations, customers, outcome, appTelemetry] = await Promise.all([
+  const [conversations, customers, outcome] = await Promise.all([
     listMyConversations(3).catch(() => []),
     listCustomers().catch(() => [] as Customer[]),
     aggregateOutcome().catch(() => ({ hours_saved: 0, agent_runs: 0, source_growth: 0 })),
-    loadAppTelemetry().catch(() => ({ topApps: [] as TopApp[], totalLaunches: 0 })),
   ]);
-
-  const launchCounts = new Map(appTelemetry.topApps.map((t) => [t.app_id, t.count] as const));
 
   const lastChat = conversations[0];
 
@@ -103,33 +70,6 @@ export async function HaiwayMission() {
             Letzter Chat: {lastChat.title || "Konversation"} →
           </Link>
         )}
-      </section>
-
-      {/* ── Apps ── */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex flex-col">
-            <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-              Apps
-            </h2>
-            <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-              Internes Inventar · GitHub-artige Repo-Struktur (Download / Launch / Web)
-            </span>
-          </div>
-          <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-            {appTelemetry.totalLaunches > 0 ? `${appTelemetry.totalLaunches} Launches · 30 Tage` : "noch keine Launches"}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {APP_INVENTORY.map((app) => (
-            <AppCard key={app.id} app={app} launches={launchCounts.get(app.id) ?? 0} />
-          ))}
-          <NewAppCard
-            label="+ Repo anlegen"
-            hint="Neue interne App im GitHub-Inventar registrieren"
-            href="/haiway/apps/new"
-          />
-        </div>
       </section>
 
       {/* ── Operating Picture ── */}
@@ -258,81 +198,6 @@ async function aggregateOutcome(): Promise<OutcomeAggregate> {
     agent_runs: agentRuns ?? 0,
     source_growth: sourceGrowth ?? 0,
   };
-}
-
-function AppCard({ app, launches }: { app: typeof APP_INVENTORY[number]; launches: number }) {
-  const kindLabel = app.kind === "no-code" ? "No-Code" : "TypeScript";
-  const kindColor = app.kind === "no-code" ? "var(--color-accent)" : "#8b5cf6";
-  return (
-    <form action={launchApp} className="contents">
-      <input type="hidden" name="appId" value={app.id} />
-      <input type="hidden" name="appKind" value={app.kind} />
-      <button
-        type="submit"
-        className="text-left rounded-2xl p-5 flex flex-col gap-2 transition-all hover:-translate-y-0.5 cursor-pointer"
-        style={{ background: "var(--color-panel)", border: "1px solid var(--color-line)", boxShadow: "var(--shadow-sm)", minHeight: 140 }}
-      >
-        <div className="flex items-center justify-between">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full"
-            style={{ background: "color-mix(in srgb, var(--color-accent) 14%, transparent)", color: kindColor }}
-          >
-            {kindLabel}
-          </span>
-          <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-            {app.status}
-          </span>
-        </div>
-        <span className="text-[14px] font-semibold mt-1" style={{ color: "var(--color-text)" }}>
-          {app.name}
-        </span>
-        <span className="text-[12px] leading-snug" style={{ color: "var(--color-muted)" }}>
-          {app.description}
-        </span>
-        <span className="text-[11px] mt-auto pt-2" style={{ color: launches > 0 ? "var(--color-accent)" : "var(--color-placeholder)" }}>
-          {launches > 0 ? `${launches} Launches · 30 Tage` : "Launchen →"}
-        </span>
-      </button>
-    </form>
-  );
-}
-
-type TopApp = { app_id: string; count: number };
-
-async function loadAppTelemetry(): Promise<{ topApps: TopApp[]; totalLaunches: number }> {
-  const db = await createUserClient();
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const { data, count } = await db
-    .from("app_launch_events")
-    .select("app_id", { count: "exact" })
-    .gte("occurred_at", since);
-
-  const counts = new Map<string, number>();
-  for (const row of (data ?? []) as { app_id: string }[]) {
-    counts.set(row.app_id, (counts.get(row.app_id) ?? 0) + 1);
-  }
-  const topApps = [...counts.entries()]
-    .map(([app_id, count]) => ({ app_id, count }))
-    .sort((a, b) => b.count - a.count);
-
-  return { topApps, totalLaunches: count ?? 0 };
-}
-
-function NewAppCard({ label, hint, href }: { label: string; hint: string; href: string }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-2xl p-5 flex flex-col gap-1 justify-center items-center text-center transition-all hover:-translate-y-0.5"
-      style={{ background: "var(--color-panel)", border: "1px dashed var(--color-accent)", minHeight: 140 }}
-    >
-      <span className="text-[14px] font-semibold" style={{ color: "var(--color-accent)" }}>
-        {label}
-      </span>
-      <span className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-        {hint}
-      </span>
-    </Link>
-  );
 }
 
 function StatusDot({ status }: { status: string }) {

@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createUserClient } from "@/lib/db/supabase-server";
-import { requireOrgId } from "@/lib/db/org-context";
+import { requireOrgId, requireBeraterRole } from "@/lib/db/org-context";
 
 type Payload = {
   system_prompt: string;
   tone: "formal" | "casual" | "neutral";
-  language: "de" | "en";
   // Agentic model (tool-calling). Empty provider = platform default (env).
   agent_provider: "" | "anthropic" | "openai-compatible";
   agent_model: string;
@@ -15,6 +14,13 @@ type Payload = {
 };
 
 export async function saveAiSettings(payload: Payload): Promise<void> {
+  // Role gate, not just org membership: settings.ai.agent.base_url redirects
+  // the agent endpoint, and the platform API key travels to whatever host is
+  // configured there. A plain member must not be able to set it — Server
+  // Actions are reachable by any authenticated user, the page gate is not
+  // enough.
+  await requireBeraterRole();
+
   const orgId = await requireOrgId();
   const db = await createUserClient();
 
@@ -31,7 +37,6 @@ export async function saveAiSettings(payload: Payload): Promise<void> {
     ai: {
       system_prompt: payload.system_prompt.trim(),
       tone: payload.tone,
-      language: payload.language,
       // Resolved by lib/ai/agent/config.ts; empty values fall back to env.
       agent: {
         provider: payload.agent_provider,

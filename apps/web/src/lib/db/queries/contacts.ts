@@ -29,26 +29,3 @@ export async function listContacts(options?: { limit?: number }): Promise<Contac
   if (error) throw error;
   return data ?? [];
 }
-
-export async function countContacts(): Promise<number> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { count } = await db
-    .from("contacts")
-    .select("*", { count: "exact", head: true })
-    .eq("organization_id", orgId);
-  return count ?? 0;
-}
-
-export async function getContactById(id: string): Promise<Contact | null> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { data, error } = await db
-    .from("contacts")
-    .select("*")
-    .eq("id", id)
-    .eq("organization_id", orgId)
-    .single();
-  if (error) return null;
-  return data;
-}

@@ -8,7 +8,9 @@ import { test, expect, type Page } from "@playwright/test";
 // Self-skipping: until the crm_workspace migrations are pushed, /crm
 // redirects to / (feature flag off) and the suite skips.
 
-const TESTER_EMAIL = "claude-tester@bernwald.net";
+// Same env source as /api/dev/test-login — the spec locates the tester row by
+// the address that endpoint actually signs in with.
+const TESTER_EMAIL = process.env.TEST_LOGIN_CLAUDE_TESTER_EMAIL ?? "claude-tester@bernwald.net";
 
 async function login(page: Page, next: string) {
   const response = await page.goto(`/api/dev/test-login?user=claude-tester&next=${next}`, {

@@ -3,12 +3,21 @@ import { isPlatformAdmin } from "@/lib/db/queries/organization";
 import { createServiceClient } from "@/lib/db/supabase-server";
 
 export async function POST(request: Request) {
-  const isAdmin = await isPlatformAdmin();
+  // Route handlers under app/admin are NOT covered by admin/layout.tsx — this
+  // check is the only authorization this endpoint has and must stay.
+  // .catch(() => false) keeps it fail-closed with a 403 instead of a 500 when
+  // the auth lookup itself throws.
+  const isAdmin = await isPlatformAdmin().catch(() => false);
   if (!isAdmin) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: { name?: string; slug?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Ungültiger Request-Body" }, { status: 400 });
+  }
   const { name, slug } = body;
 
   if (!name?.trim() || !slug?.trim()) {

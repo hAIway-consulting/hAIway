@@ -194,30 +194,6 @@ export async function getCallStats(days = 30): Promise<CallStats | null> {
   return (data?.[0] ?? null) as CallStats | null;
 }
 
-// ─── KPI ──────────────────────────────────────────────────────────────
-
-export type KpiSummary = {
-  calls_handled: number;
-  appointments_booked: number;
-  action_items_extracted: number;
-  callers_identified: number;
-  time_saved_seconds: number;
-  time_saved_hours: number;
-  total_events: number;
-  cost_per_call_avg: number | null;
-};
-
-export async function getKpiSummary(days = 30): Promise<KpiSummary | null> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { data, error } = await db.rpc("get_kpi_summary", {
-    p_org_id: orgId,
-    p_days: days,
-  });
-  if (error) return null;
-  return (data?.[0] ?? null) as KpiSummary | null;
-}
-
 // ─── CALL CATEGORIES ─────────────────────────────────────────────────
 
 export type CallCategoryStat = {

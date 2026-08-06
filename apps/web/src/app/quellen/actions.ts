@@ -190,15 +190,27 @@ export async function retrySource(sourceId: string): Promise<void> {
 }
 
 // Manual reconcile: drop every connector source whose Drive counterpart is
-// gone. Surfaces the count back to the page via search params.
+// gone. GOOGLE DRIVE ONLY — connector-sharepoint has no 'reconcile' action: it
+// maps every incoming action to `action === "initial-sync" ? "initial" :
+// "delta"`, so "reconcile" silently became a delta sync and the function
+// answered 200. This action used to read that as success and reported
+// "Aufräumen abgeschlossen" although nothing had been reconciled. A real
+// SharePoint reconcile needs a full Graph listing across all sites/drives,
+// which _shared/microsoft-graph.ts does not provide — so we decline honestly
+// instead of pretending.
 export async function reconcileConnector(
   providerId: "google_drive" | "sharepoint",
 ): Promise<void> {
+  if (providerId === "sharepoint") {
+    redirect(
+      `/quellen?error=${encodeURIComponent(
+        "Aufräumen ist für SharePoint nicht verfügbar — der Connector kann gelöschte Dateien nicht abgleichen.",
+      )}`,
+    );
+  }
+
   const orgId = await requireOrgId();
-  const url =
-    providerId === "sharepoint"
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connector-sharepoint`
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connector-gdrive`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connector-gdrive`;
 
   const call = async (action: "initial-sync" | "reconcile"): Promise<string | null> => {
     try {

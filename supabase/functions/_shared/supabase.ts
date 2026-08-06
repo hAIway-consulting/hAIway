@@ -33,3 +33,36 @@ export function jsonResponse(data: unknown, status = 200): Response {
 export function errorResponse(message: string, status = 400): Response {
   return jsonResponse({ error: message }, status);
 }
+
+// Service-role gate for Edge Functions.
+//
+// verify_jwt=true only proves that SOME valid Supabase JWT was presented — the
+// public anon key and every logged-in end user's token qualify. Functions that
+// act on an arbitrary organization_id taken from the request body, and that do
+// all their DB work through getServiceClient() (which bypasses RLS), must
+// additionally prove that the caller IS the trusted server.
+//
+// Returns null when the caller is authorized, otherwise the Response the
+// handler must return immediately.
+export function requireServiceRole(req: Request): Response | null {
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey) {
+    console.error("[requireServiceRole] SUPABASE_SERVICE_ROLE_KEY not set");
+    return errorResponse("server misconfigured", 500);
+  }
+
+  const header = req.headers.get("Authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!constantTimeEqual(token, serviceKey)) {
+    return errorResponse("unauthorized", 401);
+  }
+  return null;
+}
+
+// Constant-time compare so a wrong token cannot be probed byte by byte.
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}

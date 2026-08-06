@@ -1,7 +1,7 @@
 // Shared presentational pieces for the Berater-Cockpit tabs
 // (docs/spec-berater-dashboard.md §8). Deliberately local: the markup
-// follows /admin/automatisierungen + /admin/integrationen, but those pages
-// stay untouched (parallel PRs) — no cross-imports.
+// follows /admin/integrationen, but that page stays untouched — no
+// cross-imports.
 
 export type PillTone = "success" | "warning" | "danger" | "accent" | "muted";
 
@@ -69,26 +69,6 @@ export function Empty({ text }: { text: string }) {
       {text}
     </p>
   );
-}
-
-export function relativeTime(iso: string | null): string {
-  if (!iso) return "noch nie";
-  const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (diffMin < 1) return "gerade eben";
-  if (diffMin < 60) return `vor ${diffMin} Min.`;
-  const diffH = Math.round(diffMin / 60);
-  if (diffH < 24) return `vor ${diffH} Std.`;
-  const diffD = Math.round(diffH / 24);
-  if (diffD === 1) return "gestern";
-  return `vor ${diffD} Tagen`;
-}
-
-/** "Ergebnis statt Feature": saved minutes as a human-readable German label. */
-export function formatMinutes(minutes: number): string {
-  if (!Number.isFinite(minutes) || minutes <= 0) return "—";
-  if (minutes < 60) return `${Math.round(minutes)} Min.`;
-  const hours = minutes / 60;
-  return `${hours.toLocaleString("de-DE", { maximumFractionDigits: 1 })} Std.`;
 }
 
 export function truncate(text: string | null | undefined, max = 80): string {
