@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import type { NormalizeMsg } from "@haiway/contracts/queue-messages";
 import { requireOrgId, requireBeraterRole } from "@/lib/db/org-context";
 import { createServiceClient } from "@/lib/db/supabase-server";
 import { getAppUrl } from "@/lib/app-url";
@@ -192,16 +193,17 @@ export async function retrySource(sourceId: string): Promise<void> {
     .update({ sync_status: "queued" })
     .eq("id", sourceId);
 
+  const msg: NormalizeMsg = {
+    organization_id: orgId,
+    provider_id: providerId,
+    run_id: raw.run_id,
+    external_id: source.external_id,
+    entity_type: raw.entity_type,
+    payload_hash: raw.payload_hash,
+  };
   const { error: enqErr } = await db.rpc("pgmq_send", {
     p_queue: "normalize",
-    p_msg: {
-      organization_id: orgId,
-      provider_id: providerId,
-      run_id: raw.run_id,
-      external_id: source.external_id,
-      entity_type: raw.entity_type,
-      payload_hash: raw.payload_hash,
-    },
+    p_msg: msg,
   });
   if (enqErr) throw enqErr;
 

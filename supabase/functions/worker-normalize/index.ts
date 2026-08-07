@@ -13,6 +13,7 @@
 // talks to Google Calendar through calendar_integrations +
 // _shared/google-calendar.ts and is unaffected.
 
+import type { NormalizeMsg } from "@haiway/contracts/queue-messages";
 import {
   getServiceClient,
   jsonResponse,
@@ -26,15 +27,6 @@ const QUEUE                 = "normalize";
 const VISIBILITY_TIMEOUT    = 60;   // seconds
 const BATCH_SIZE            = 25;
 const MAX_ATTEMPTS_PER_MSG  = 5;
-
-interface NormalizeMsg {
-  organization_id: string;
-  provider_id:     string;
-  run_id:          string;
-  external_id:     string;
-  entity_type:     string;
-  payload_hash:    string;
-}
 
 type Normalizer = (
   msg: NormalizeMsg,

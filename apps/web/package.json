@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@haiway/contracts": "*",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.49.8",
     "@vapi-ai/web": "^2.5.2",

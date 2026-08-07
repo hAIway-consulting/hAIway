@@ -1,0 +1,21 @@
+{
+  "name": "@haiway/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Runtime-neutral types and Zod schemas shared between the Next.js app (Node) and Supabase Edge Functions (Deno). Must never import Node or Deno APIs.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./queue-messages": "./src/queue-messages.ts",
+    "./integrations": "./src/integrations.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
