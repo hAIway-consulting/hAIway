@@ -12,21 +12,22 @@ import { NextResponse, type NextRequest } from "next/server";
 // values. There are deliberately NO defaults: a missing variable produces a 503
 // instead of silently falling back to a well-known password.
 //
-//  claude-tester  → role 'admin' in claude-test sandbox  → persona "berater"
-//  max            → role 'member' in time-keeper prod    → persona "workspace"
-//  anna           → role 'member' in time-keeper prod    → persona "workspace"
+//  claude-tester  → role 'admin'  in claude-test sandbox → persona "berater"
+//  member         → role 'member' in claude-test sandbox → persona "workspace"
+//
+// Both personas live in the sandbox org. The former "max" and "anna" entries
+// pointed at two accounts inside the production org; they were removed with the
+// org reset (PR #58) and no longer exist in Auth — verified 2026-08-07 via the
+// admin API. "member" replaces them, because a test account that can reach
+// production data is exactly what made the credential leak in this file matter.
 const TEST_USER_ENV = {
   "claude-tester": {
     email: "TEST_LOGIN_CLAUDE_TESTER_EMAIL",
     password: "TEST_LOGIN_CLAUDE_TESTER_PASSWORD",
   },
-  max: {
-    email: "TEST_LOGIN_MAX_EMAIL",
-    password: "TEST_LOGIN_MAX_PASSWORD",
-  },
-  anna: {
-    email: "TEST_LOGIN_ANNA_EMAIL",
-    password: "TEST_LOGIN_ANNA_PASSWORD",
+  member: {
+    email: "TEST_LOGIN_MEMBER_EMAIL",
+    password: "TEST_LOGIN_MEMBER_PASSWORD",
   },
 } as const;
 

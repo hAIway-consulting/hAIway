@@ -24,7 +24,7 @@ test("berater lands on the Agenten tab with both tabs", async ({ page }) => {
 });
 
 test("member is redirected away from /admin/cockpit", async ({ page }) => {
-  const response = await page.goto("/api/dev/test-login?user=max&next=/admin/cockpit", {
+  const response = await page.goto("/api/dev/test-login?user=member&next=/admin/cockpit", {
     waitUntil: "domcontentloaded",
   });
   expect(

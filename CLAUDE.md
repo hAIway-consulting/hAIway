@@ -154,17 +154,28 @@ AI_KEYS_ENCRYPTION_SECRET=  # verschluesselt ai_provider_keys (AES-256-GCM). In 
                             # Tenant-Keys (Env-Fallback haelt die Plattform am Leben, Keys neu erfassen).
 ```
 
-Nur lokal (`apps/web/.env.local`) — **niemals in Vercel-Production und niemals ins Repo**.
-Ohne sie antwortet `/api/dev/test-login` mit 503 und die e2e-Specs scheitern mit
-klarer Meldung; `create-sandbox-org.mjs` bricht mit Hinweis ab.
+Quelle der Wahrheit ist Vercel, **Scope ausschliesslich `Development`** — damit sie
+nie in einen Production-Build geraten. Lokal holt man sie mit
+
+```bash
+npx vercel env pull .env.rotate.local --environment=development
+```
+
+in eine temporaere Datei (der Name endet auf `.local` und faellt damit unter
+`.gitignore`). Kein direktes `vercel env pull apps/web/.env.local`: das
+ueberschreibt die Datei komplett und zerstoert dabei `NEXT_PUBLIC_APP_URL`
+(muss lokal `localhost` sein) sowie `ANTHROPIC_API_KEY` (steht bewusst nicht in
+Vercel). Ohne die Variablen antwortet `/api/dev/test-login` mit 503 und die
+e2e-Specs scheitern mit klarer Meldung.
+
+Beide Personas liegen in der Sandbox-Org `claude-test` — **kein Testkonto
+gehoert in eine Produktions-Org**.
 
 ```
-TEST_LOGIN_CLAUDE_TESTER_EMAIL=     # Sandbox-Tester (Persona "berater")
+TEST_LOGIN_CLAUDE_TESTER_EMAIL=     # Sandbox, Rolle admin  (Persona "berater")
 TEST_LOGIN_CLAUDE_TESTER_PASSWORD=
-TEST_LOGIN_MAX_EMAIL=               # Prod-Mitglied (Persona "workspace")
-TEST_LOGIN_MAX_PASSWORD=
-TEST_LOGIN_ANNA_EMAIL=              # Prod-Mitglied (Persona "workspace")
-TEST_LOGIN_ANNA_PASSWORD=
+TEST_LOGIN_MEMBER_EMAIL=            # Sandbox, Rolle member (Persona "workspace")
+TEST_LOGIN_MEMBER_PASSWORD=
 SANDBOX_TESTER_PASSWORD=            # fuer scripts/ops/create-sandbox-org.mjs
 ```
 

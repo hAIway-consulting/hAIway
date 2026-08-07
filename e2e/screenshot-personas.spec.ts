@@ -4,7 +4,7 @@ import { test } from "@playwright/test";
 // `npx playwright test e2e/screenshot-personas.spec.ts` aufgerufen.
 
 test("workspace home — member persona (Max)", async ({ page }) => {
-  await page.goto("/api/dev/test-login?user=max&next=/", { waitUntil: "networkidle" });
+  await page.goto("/api/dev/test-login?user=member&next=/", { waitUntil: "networkidle" });
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: "test-results/persona-workspace.png", fullPage: true });
 });

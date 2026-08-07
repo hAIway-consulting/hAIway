@@ -3,14 +3,14 @@ import { test, expect } from "@playwright/test";
 // Saved agents (docs/spec-cockpit.md §9). The agent tiles come exclusively
 // from the `saved_agents` table — the seed in the migration
 // 20260611122000_cockpit_flags_and_seeds.sql is a precondition for this spec.
-// Uses the "max" persona (member role) because only members see the
+// Uses the "member" persona (sandbox, member role) because only members see the
 // Workspace-Home with agent tiles.
 
 test("workspace home renders agent tiles and a click starts a conversation", async ({ page }) => {
   // The tile click runs the full send pipeline server-side before redirecting.
   test.setTimeout(120_000);
 
-  const response = await page.goto("/api/dev/test-login?user=max&next=/", {
+  const response = await page.goto("/api/dev/test-login?user=member&next=/", {
     waitUntil: "domcontentloaded",
   });
   expect(response?.status(), "test-login must succeed (404 means NODE_ENV != development)").toBeLessThan(400);
