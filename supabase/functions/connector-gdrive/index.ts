@@ -2,7 +2,12 @@
 //
 // Google Drive ingest via Drive Changes API.
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { runSync, SyncRecord } from "../_shared/worker.ts";
 import {
   refreshGoogleAccessToken,
@@ -183,6 +188,14 @@ async function reconcileOrg(orgId: string): Promise<{ removed: number }> {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
+
+  // Server-to-server only: organization_id comes straight from the body and
+  // every DB access runs through the service client, which bypasses RLS.
+  // Callers: apps/web/src/app/quellen/actions.ts (service-role bearer) and the
+  // pg_cron jobs, which 20260806100000_connector_crons_service_role.sql moved
+  // off the public anon key onto the vault service_role_key.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   let body: { action?: string; organization_id?: string; trigger?: string };
   try {

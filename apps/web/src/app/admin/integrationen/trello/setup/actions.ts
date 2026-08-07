@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireOrgId } from "@/lib/db/org-context";
+import { requireOrgId, requireBeraterRole } from "@/lib/db/org-context";
 import { createServiceClient } from "@/lib/db/supabase-server";
 
 interface TrelloCredentials {
@@ -11,7 +11,12 @@ interface TrelloCredentials {
   default_list_id?: string;
 }
 
+// The wizard writes organization_integrations.credentials with the service
+// client, which bypasses RLS and the column privileges. admin/layout.tsx gates
+// the PAGE on the Berater roles, but a Server Action is reachable for every
+// authenticated user — so the role check has to live here too.
 async function patchTrelloCredentials(patch: Partial<TrelloCredentials>): Promise<void> {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = createServiceClient();
   const { data, error: readErr } = await db
@@ -53,6 +58,7 @@ export async function saveDefaultListId(formData: FormData): Promise<void> {
 
 // Lets the user step back from the list picker to the board picker.
 export async function clearBoardId(): Promise<void> {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = createServiceClient();
   const { data } = await db

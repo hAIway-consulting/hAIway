@@ -19,7 +19,12 @@
 // OPENAI_RESEARCH_TIMEKEEPER_KEY (preferred) or OPENAI_API_KEY. Model
 // override via EXTRACTION_MODEL (default "gpt-4o-mini").
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { readBatch, ack, deadLetter, queueLength } from "../_shared/queue.ts";
 
 const QUEUE                = "extract";
@@ -287,6 +292,13 @@ async function handleMessage(msg: ExtractMsg): Promise<void> {
 
 Deno.serve(async (req) => {
   try {
+    // verify_jwt only proves that SOME valid token was sent — the public anon
+    // key qualifies. The cron authenticates with the service role key
+    // (20260806150000). This is the most expensive worker (one LLM call per
+    // message), so an anonymous caller must not be able to start it.
+    const unauthorized = requireServiceRole(req);
+    if (unauthorized) return unauthorized;
+
     if (req.method !== "POST") return errorResponse("Method not allowed", 405);
 
     // Conditional polling: extract is the most expensive worker (per-message

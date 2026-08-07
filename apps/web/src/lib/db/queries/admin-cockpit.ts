@@ -1,11 +1,9 @@
 // Cross-tenant queries for the platform-admin cockpit views
-// (docs/spec-admin-dashboard.md §3–§6).
+// (docs/spec-admin-dashboard.md §5–§6).
 //
 // Everything in here runs on the SERVICE client: the cross-tenant views
-// (ai_usage_platform_daily, agent_runs_daily, skill_runs_daily) grant
-// service_role only, ai_provider_keys is deny-all RLS, and library rows
-// (skills.organization_id IS NULL, automation_templates) are written via
-// service role exclusively. Callers MUST gate with the strict
+// (ai_usage_platform_daily, agent_runs_daily) grant service_role only and
+// ai_provider_keys is deny-all RLS. Callers MUST gate with the strict
 // isPlatformAdmin() check — the soft /admin layout gate is not enough.
 //
 // Defensive by design: every query resolves to an empty result on error so
@@ -13,176 +11,6 @@
 // migrations are pushed.
 
 import { createServiceClient } from "../supabase-server";
-
-// ─── AUTOMATIONS (admin spec §3) ─────────────────────────────────────────
-
-export type PlatformAutomation = {
-  id: string;
-  organization_id: string;
-  org_name: string;
-  key: string;
-  name: string;
-  description: string;
-  requires: string[];
-  status: string;
-  owner_name: string | null;
-  template_id: string | null;
-};
-
-export async function listAllAutomations(): Promise<PlatformAutomation[]> {
-  try {
-    const db = createServiceClient();
-    const { data, error } = await db
-      .from("automations")
-      .select("id, organization_id, key, name, description, requires, status, owner, template_id")
-      .order("key")
-      .order("created_at");
-    if (error || !data) return [];
-
-    const orgIds = [...new Set(data.map((a) => a.organization_id as string))];
-    const ownerIds = [...new Set(data.map((a) => a.owner as string | null).filter(Boolean))] as string[];
-
-    const [orgsRes, ownersRes] = await Promise.all([
-      orgIds.length
-        ? db.from("organizations").select("id, name").in("id", orgIds)
-        : Promise.resolve({ data: [] as { id: string; name: string }[] }),
-      ownerIds.length
-        ? db.from("profiles").select("id, full_name, email").in("id", ownerIds)
-        : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string | null }[] }),
-    ]);
-
-    const orgNames = new Map((orgsRes.data ?? []).map((o) => [o.id, o.name] as const));
-    const ownerNames = new Map(
-      (ownersRes.data ?? []).map((p) => [p.id, p.full_name ?? p.email ?? null] as const),
-    );
-
-    return data.map((a) => ({
-      id: a.id,
-      organization_id: a.organization_id,
-      org_name: orgNames.get(a.organization_id) ?? a.organization_id,
-      key: a.key,
-      name: a.name,
-      description: a.description ?? "",
-      requires: (a.requires as string[]) ?? [],
-      status: a.status,
-      owner_name: a.owner ? (ownerNames.get(a.owner) ?? null) : null,
-      template_id: a.template_id,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-export type AutomationHealth = {
-  organization_id: string;
-  workflow_key: string;
-  total: number;
-  failed: number;
-};
-
-/** failed/total per org + workflow key from workflow_runs (last `days` days). */
-export async function automationHealth(days = 14): Promise<AutomationHealth[]> {
-  try {
-    const db = createServiceClient();
-    const since = new Date(Date.now() - days * 86_400_000).toISOString();
-    const { data, error } = await db
-      .from("workflow_runs")
-      .select("organization_id, workflow_key, status")
-      .gte("started_at", since)
-      .limit(10_000);
-    if (error || !data) return [];
-
-    const byKey = new Map<string, AutomationHealth>();
-    for (const run of data) {
-      const mapKey = `${run.organization_id}:${run.workflow_key}`;
-      const entry =
-        byKey.get(mapKey) ??
-        { organization_id: run.organization_id, workflow_key: run.workflow_key, total: 0, failed: 0 };
-      entry.total += 1;
-      if (run.status === "failed") entry.failed += 1;
-      byKey.set(mapKey, entry);
-    }
-    return [...byKey.values()];
-  } catch {
-    return [];
-  }
-}
-
-export type AutomationTemplate = {
-  id: string;
-  key: string;
-  name: string;
-  description: string;
-  requires: string[];
-  default_config: Record<string, unknown>;
-  industry_tag: string | null;
-  version: number;
-  updated_at: string;
-};
-
-export async function listTemplates(): Promise<AutomationTemplate[]> {
-  try {
-    const db = createServiceClient();
-    const { data, error } = await db
-      .from("automation_templates")
-      .select("id, key, name, description, requires, default_config, industry_tag, version, updated_at")
-      .order("key");
-    if (error || !data) return [];
-    return data as AutomationTemplate[];
-  } catch {
-    return [];
-  }
-}
-
-/** Connection status per org × provider — drives the requires/blocker badges. */
-export type OrgProviderConnection = {
-  organization_id: string;
-  provider_id: string;
-  status: string;
-};
-
-export async function listOrgProviderConnections(): Promise<OrgProviderConnection[]> {
-  try {
-    const db = createServiceClient();
-    const { data, error } = await db
-      .from("organization_integrations")
-      .select("organization_id, provider_id, status");
-    if (error || !data) return [];
-    return data as OrgProviderConnection[];
-  } catch {
-    return [];
-  }
-}
-
-// ─── SKILL LIBRARY (admin spec §4) ───────────────────────────────────────
-
-export type LibrarySkill = {
-  id: string;
-  name: string;
-  description: string;
-  industry_scope: string | null;
-  prompt_template: string;
-  tool_refs: string[];
-  code_ref: string | null;
-  status: string;
-  version: number;
-  updated_at: string;
-};
-
-export async function listLibrarySkills(): Promise<LibrarySkill[]> {
-  try {
-    const db = createServiceClient();
-    const { data, error } = await db
-      .from("skills")
-      .select("id, name, description, industry_scope, prompt_template, tool_refs, code_ref, status, version, updated_at")
-      .is("organization_id", null)
-      .order("name");
-    if (error || !data) return [];
-    return data as LibrarySkill[];
-  } catch {
-    return [];
-  }
-}
 
 // ─── PROVIDER KEYS (admin spec §5) ───────────────────────────────────────
 // IMPORTANT: encrypted_key is NEVER selected here — raw/encrypted key
@@ -391,7 +219,6 @@ export async function quotaAlarms(threshold = 0.8): Promise<QuotaAlarm[]> {
 // ─── RUNS (admin spec §6) ────────────────────────────────────────────────
 
 export type RunsDailyRow = {
-  kind: "agent" | "skill";
   organization_id: string;
   day: string;
   total: number;
@@ -399,36 +226,24 @@ export type RunsDailyRow = {
   p95_duration_ms: number | null;
 };
 
-/** agent_runs_daily + skill_runs_daily merged (last `days` days). */
+/** agent_runs_daily (last `days` days). */
 export async function runsDaily(days = 14): Promise<RunsDailyRow[]> {
   try {
     const db = createServiceClient();
     const since = new Date(Date.now() - days * 86_400_000).toISOString();
-    const [agentsRes, skillsRes] = await Promise.all([
-      db
-        .from("agent_runs_daily")
-        .select("organization_id, day, total, failed, p95_duration_ms")
-        .gte("day", since),
-      db
-        .from("skill_runs_daily")
-        .select("organization_id, day, total, failed, p95_duration_ms")
-        .gte("day", since),
-    ]);
+    const agentsRes = await db
+      .from("agent_runs_daily")
+      .select("organization_id, day, total, failed, p95_duration_ms")
+      .gte("day", since);
+    if (agentsRes.error) return [];
 
-    const tag = (kind: "agent" | "skill", rows: unknown[] | null): RunsDailyRow[] =>
-      ((rows ?? []) as Omit<RunsDailyRow, "kind">[]).map((r) => ({
-        kind,
-        organization_id: r.organization_id,
-        day: r.day,
-        total: Number(r.total ?? 0),
-        failed: Number(r.failed ?? 0),
-        p95_duration_ms: r.p95_duration_ms === null ? null : Number(r.p95_duration_ms),
-      }));
-
-    return [
-      ...tag("agent", agentsRes.error ? [] : agentsRes.data),
-      ...tag("skill", skillsRes.error ? [] : skillsRes.data),
-    ];
+    return ((agentsRes.data ?? []) as RunsDailyRow[]).map((r) => ({
+      organization_id: r.organization_id,
+      day: r.day,
+      total: Number(r.total ?? 0),
+      failed: Number(r.failed ?? 0),
+      p95_duration_ms: r.p95_duration_ms === null ? null : Number(r.p95_duration_ms),
+    }));
   } catch {
     return [];
   }

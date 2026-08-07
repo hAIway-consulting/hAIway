@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/db/queries/organization";
 import {
   getQualityTotals,
   getPassiveSignals,
@@ -24,6 +26,11 @@ export default async function RetrievalQualityPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  // Cross-tenant view. The actions below already enforce requireAdmin(), but
+  // they throw — without this gate a Berater gets a 500 page instead of a
+  // redirect. Defense in depth plus correct UX.
+  if (!(await isPlatformAdmin().catch(() => false))) redirect("/");
+
   const params = await searchParams;
   const organizationId = params.org && params.org !== "all" ? params.org : null;
   const onlyUnreviewed = params.unreviewed === "1";

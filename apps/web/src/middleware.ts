@@ -107,8 +107,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Dedicated mode: block admin and onboarding routes
-  if (isDedicated && (pathname.startsWith("/admin") || pathname.startsWith("/onboarding"))) {
+  // Dedicated mode: block admin routes
+  if (isDedicated && pathname.startsWith("/admin")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

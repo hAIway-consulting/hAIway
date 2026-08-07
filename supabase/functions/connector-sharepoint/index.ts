@@ -7,7 +7,12 @@
 // In delta-sync without organization_id we iterate every active SharePoint
 // integration (cron path).
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { runSync, SyncRecord } from "../_shared/worker.ts";
 import {
   refreshMicrosoftAccessToken,
@@ -160,6 +165,13 @@ async function syncOrg(orgId: string, mode: "initial" | "delta", trigger: string
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
+
+  // Server-to-server only — same reasoning as connector-gdrive. Callers:
+  // apps/web/src/app/quellen/actions.ts (service-role bearer) and the
+  // 'connector-sharepoint-delta' cron, moved onto the service_role_key by
+  // 20260806100000_connector_crons_service_role.sql.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   let body: { action?: string; organization_id?: string; trigger?: string };
   try {

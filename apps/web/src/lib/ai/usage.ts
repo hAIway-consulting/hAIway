@@ -6,7 +6,7 @@
 import { createServiceClient } from "@/lib/db/supabase-server";
 import { estimateCostCents } from "./pricing";
 
-export type AiUsagePurpose = "chat" | "agent" | "skill" | "automation" | "embedding";
+export type AiUsagePurpose = "chat" | "agent" | "embedding";
 
 export interface AiUsageEvent {
   orgId:     string;
@@ -16,7 +16,7 @@ export interface AiUsageEvent {
   purpose:   AiUsagePurpose;
   tokensIn:  number;
   tokensOut: number;
-  refType?:  "chat_message" | "agent_run" | "skill_run" | "workflow_run" | "source" | null;
+  refType?:  "chat_message" | "agent_run" | "source" | null;
   refId?:    string | null;
 }
 

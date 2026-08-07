@@ -23,7 +23,3 @@ export async function transcribeAudio(
 
   return typeof response === "string" ? response : String(response);
 }
-
-export function hasTranscriptionKey(): boolean {
-  return !!getOpenAIKey();
-}

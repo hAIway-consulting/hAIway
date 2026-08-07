@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
-import { requireOrgId } from "@/lib/db/org-context";
+import { requireOrgId, getMemberRole, BERATER_ROLES } from "@/lib/db/org-context";
 import { card, btn, page, styles } from "@/components/ui/table-classes";
 import { connectSharepoint, connectGdrive } from "./actions";
 import { AutoRefreshWhileSyncing } from "./auto-refresh";
@@ -131,6 +131,12 @@ export default async function QuellenPage({
   const orgId = await requireOrgId();
   const db = await createUserClient();
 
+  // Connecting a connector writes org-wide OAuth credentials, so the actions
+  // in ./actions.ts are gated with requireBeraterRole(). Hide the button for
+  // everyone else instead of letting them run into the OAuth flow first.
+  const role = await getMemberRole();
+  const canConnect = !!role && BERATER_ROLES.includes(role);
+
   const { data: integrationsRaw } = await db
     .from("organization_integrations")
     .select("provider_id, status, last_synced_at, error_message, config")
@@ -203,6 +209,7 @@ export default async function QuellenPage({
         files={byProvider.sharepoint}
         stats={sharepointStats}
         connectAction={connectSharepoint}
+        canConnect={canConnect}
       />
       <ConnectorCard
         providerId="google_drive"
@@ -210,6 +217,7 @@ export default async function QuellenPage({
         files={byProvider.gdrive}
         stats={gdriveStats}
         connectAction={connectGdrive}
+        canConnect={canConnect}
       />
     </div>
   );
@@ -221,8 +229,9 @@ function ConnectorCard(props: {
   files: SourceRow[];
   stats: Stats;
   connectAction: () => Promise<void>;
+  canConnect: boolean;
 }) {
-  const { providerId, integration, files, stats } = props;
+  const { providerId, integration, files, stats, canConnect } = props;
   const isActive = integration?.status === "active";
   const isErrored = integration?.status === "error";
   // Sync-side errors (e.g. SharePoint Online license missing, Drive 403) leave
@@ -345,14 +354,22 @@ function ConnectorCard(props: {
             {health.label}
           </span>
           {!isActive ? (
-            <form action={props.connectAction}>
-              <button type="submit" className={btn.primary} style={styles.accent}>
-                {integration ? "Erneut verbinden" : "Verbinden"}
-              </button>
-            </form>
+            canConnect ? (
+              <form action={props.connectAction}>
+                <button type="submit" className={btn.primary} style={styles.accent}>
+                  {integration ? "Erneut verbinden" : "Verbinden"}
+                </button>
+              </form>
+            ) : (
+              <span className="text-xs" style={{ color: "var(--color-muted)" }}>
+                Verbinden ist der Administration vorbehalten.
+              </span>
+            )
           ) : (
             <>
               <SyncButton providerId={providerId} />
+              {/* Aufräumen nur für Google Drive: connector-sharepoint kennt keine
+                  'reconcile'-Aktion (siehe actions.ts, reconcileConnector). */}
               {providerId === "google_drive" && <ReconcileButton providerId={providerId} />}
             </>
           )}

@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createUserClient } from "@/lib/db/supabase-server";
-import { requireOrgId } from "@/lib/db/org-context";
+import { requireOrgId, requireBeraterRole } from "@/lib/db/org-context";
+
+// Reads stay open to every org member (RLS still scopes them to the active
+// org). Writes are Berater-only — the RLS policies on permission_groups /
+// permission_group_members / source_folders / source_folder_access enforce the
+// same rule in the database; this guard exists so a regular member gets a
+// clean rejection instead of a raw Postgres RLS error.
 
 // ── Read ────────────────────────────────────────────────────────────────
 
@@ -123,6 +129,7 @@ export async function listUnassignedSources() {
 // ── Create ──────────────────────────────────────────────────────────────
 
 export async function createPermissionGroup(name: string, description?: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { data, error } = await db
@@ -136,6 +143,7 @@ export async function createPermissionGroup(name: string, description?: string) 
 }
 
 export async function createSourceFolder(name: string, description?: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { data, error } = await db
@@ -149,6 +157,7 @@ export async function createSourceFolder(name: string, description?: string) {
 }
 
 export async function addGroupMember(groupId: string, userId: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { error } = await db
@@ -159,6 +168,7 @@ export async function addGroupMember(groupId: string, userId: string) {
 }
 
 export async function removeGroupMember(membershipId: string) {
+  await requireBeraterRole();
   const db = await createUserClient();
   const { error } = await db
     .from("permission_group_members")
@@ -169,6 +179,7 @@ export async function removeGroupMember(membershipId: string) {
 }
 
 export async function grantFolderAccess(folderId: string, groupId: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { error } = await db
@@ -179,6 +190,7 @@ export async function grantFolderAccess(folderId: string, groupId: string) {
 }
 
 export async function revokeFolderAccess(accessId: string) {
+  await requireBeraterRole();
   const db = await createUserClient();
   const { error } = await db
     .from("source_folder_access")
@@ -189,6 +201,7 @@ export async function revokeFolderAccess(accessId: string) {
 }
 
 export async function assignSourceToFolder(sourceId: string, folderId: string | null) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { error } = await db
@@ -201,6 +214,7 @@ export async function assignSourceToFolder(sourceId: string, folderId: string | 
 }
 
 export async function assignSourcesToFolder(sourceIds: string[], folderId: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   const { error } = await db
@@ -215,6 +229,7 @@ export async function assignSourcesToFolder(sourceIds: string[], folderId: strin
 // ── Delete ──────────────────────────────────────────────────────────────
 
 export async function deletePermissionGroup(groupId: string) {
+  await requireBeraterRole();
   const db = await createUserClient();
   const { error } = await db
     .from("permission_groups")
@@ -225,6 +240,7 @@ export async function deletePermissionGroup(groupId: string) {
 }
 
 export async function deleteSourceFolder(folderId: string) {
+  await requireBeraterRole();
   const orgId = await requireOrgId();
   const db = await createUserClient();
   // Unassign all sources first (set folder_id to null)

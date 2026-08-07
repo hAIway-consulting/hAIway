@@ -16,8 +16,6 @@ export const dynamic = "force-dynamic";
 const PURPOSE_LABELS: Record<string, string> = {
   chat: "Chat",
   agent: "Agent",
-  skill: "Skill",
-  automation: "Automatisierung",
   embedding: "Embedding",
 };
 
@@ -42,11 +40,10 @@ export default async function AiCostsPage() {
   const totalTokens = rollup.perOrg.reduce((sum, o) => sum + o.tokens, 0);
   const totalCost = rollup.perOrg.reduce((sum, o) => sum + o.cost_cents, 0);
 
-  const runTotals = { agent: { total: 0, failed: 0 }, skill: { total: 0, failed: 0 } };
-  for (const r of runs) {
-    runTotals[r.kind].total += r.total;
-    runTotals[r.kind].failed += r.failed;
-  }
+  const agentTotals = runs.reduce(
+    (acc, r) => ({ total: acc.total + r.total, failed: acc.failed + r.failed }),
+    { total: 0, failed: 0 },
+  );
   const errorRate = (t: { total: number; failed: number }) =>
     t.total === 0 ? "—" : `${((t.failed / t.total) * 100).toFixed(1).replace(".", ",")} %`;
 
@@ -68,20 +65,14 @@ export default async function AiCostsPage() {
       </header>
 
       {/* ── Übersichtskarten ── */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         <StatCard label="Tokens (Monat)" value={formatTokens(totalTokens)} />
         <StatCard label="Kosten (Monat)" value={formatEuro(totalCost)} />
         <StatCard
           label="Agent-Runs (14 T.)"
-          value={formatTokens(runTotals.agent.total)}
-          sub={`Fehlerrate ${errorRate(runTotals.agent)}`}
-          warn={runTotals.agent.failed > 0}
-        />
-        <StatCard
-          label="Skill-Runs (14 T.)"
-          value={formatTokens(runTotals.skill.total)}
-          sub={`Fehlerrate ${errorRate(runTotals.skill)}`}
-          warn={runTotals.skill.failed > 0}
+          value={formatTokens(agentTotals.total)}
+          sub={`Fehlerrate ${errorRate(agentTotals)}`}
+          warn={agentTotals.failed > 0}
         />
       </section>
 
@@ -231,7 +222,7 @@ export default async function AiCostsPage() {
 
       {runs.length === 0 && (
         <p className="text-[11px]" style={{ color: "var(--color-placeholder)" }}>
-          Noch keine Agent-/Skill-Runs — die Run-Karten füllen sich, sobald die ersten Läufe
+          Noch keine Agent-Runs — die Run-Karte füllt sich, sobald die ersten Läufe
           protokolliert sind.
         </p>
       )}

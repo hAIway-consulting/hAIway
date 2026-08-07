@@ -169,13 +169,6 @@ Deno.serve(async (req: Request) => {
           parts.push(`Letzte Interaktionen: ${actSummary}`);
         }
 
-        if (callerContext.open_processes && callerContext.open_processes.length > 0) {
-          const procSummary = callerContext.open_processes
-            .map((p: { name: string; status: string }) => p.name)
-            .join(", ");
-          parts.push(`Offene Prozesse: ${procSummary}`);
-        }
-
         if (callerContext.next_appointment) {
           parts.push(`Naechster Termin: ${callerContext.next_appointment.title} am ${callerContext.next_appointment.datetime}`);
         }
@@ -1038,9 +1031,12 @@ type CallerContext = {
   contact_email: string | null;
   contact_phone: string | null;
   recent_activities: Array<{ title: string; date: string; activity_type: string }>;
-  open_processes: Array<{ name: string; status: string }>;
   next_appointment: { title: string; datetime: string } | null;
 };
+// NOTE: get_caller_context used to return an `open_processes` column as well.
+// The process model was dropped by
+// 20260806160000_drop_process_and_mapping_model.sql, which recreates the RPC
+// without it — keep this type in sync with that definition.
 
 async function getCallerContextFromDB(
   orgId: string,

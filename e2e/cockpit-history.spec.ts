@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 // the Cockpit (left sidebar with mode tabs), not on the overview page.
 
 test("member sees the history sidebar with mode tabs in the cockpit", async ({ page }) => {
-  await page.goto("/api/dev/test-login?user=max&next=/chat", {
+  await page.goto("/api/dev/test-login?user=member&next=/chat", {
     waitUntil: "domcontentloaded",
   });
   await expect(page).toHaveURL(/\/chat\//);
@@ -16,7 +16,7 @@ test("member sees the history sidebar with mode tabs in the cockpit", async ({ p
 });
 
 test("overview no longer lists the history, only the cockpit link", async ({ page }) => {
-  await page.goto("/api/dev/test-login?user=max&next=/", {
+  await page.goto("/api/dev/test-login?user=member&next=/", {
     waitUntil: "domcontentloaded",
   });
   await expect(page.getByText("Cockpit-Verlauf öffnen")).toBeVisible();

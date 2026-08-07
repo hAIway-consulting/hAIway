@@ -47,7 +47,8 @@ function toLocal(m: StoredMessage): LocalMessage {
   };
 }
 
-// Render `[Q1]`-style citation markers as small chips that scroll to the source.
+// Render `[Q1]`-style citation markers as small, non-interactive chips. The
+// matching source is listed in the source list below the message.
 function renderWithCitations(text: string): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   const re = /\[Q(\d+)\]/g;
@@ -59,7 +60,7 @@ function renderWithCitations(text: string): React.ReactNode[] {
     out.push(
       <sup
         key={`cite-${idx++}`}
-        className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer"
+        className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
         style={styles.accentSoft}
         title={`Quelle ${m[1]}`}
       >
@@ -355,12 +356,12 @@ export default function ChatView({
             </p>
             <p className="text-sm max-w-sm" style={styles.muted}>
               {isAgent
-                ? "Der Agent nutzt Werkzeuge auf euren Daten — z. B. Automatisierungs-Status, Reklamationen oder Trello."
+                ? "Der Agent nutzt Werkzeuge auf euren Daten — z. B. euer Trello-Board."
                 : "Antworten kommen ausschliesslich aus deinen Quellen — mit Hybrid-Suche (Volltext + Semantik) und Quellenangaben."}
             </p>
             {!isAgent && agentAvailable && (
               <p className="text-xs max-w-sm" style={styles.muted}>
-                Für Aktionen und Echtzeit-Daten (Automatisierungen, Tickets): unten auf
+                Für Aktionen und Echtzeit-Daten (z. B. Trello-Karten): unten auf
                 {" "}„Agent&ldquo; umschalten.
               </p>
             )}

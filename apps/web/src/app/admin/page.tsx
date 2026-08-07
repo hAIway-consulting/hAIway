@@ -1,9 +1,16 @@
 import { getAdminStats, listOrganizations, getPlatformOrganization } from "@/lib/db/queries/admin";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/db/queries/organization";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
+  // Cross-tenant view: STRICT platform gate — the soft /admin layout gate lets
+  // Berater/Org-Admins through and must not be relied on here. All three
+  // queries below run on the service-role client and return every customer org.
+  if (!(await isPlatformAdmin().catch(() => false))) redirect("/");
+
   const [stats, orgs, platformOrg] = await Promise.all([
     getAdminStats(),
     listOrganizations(),

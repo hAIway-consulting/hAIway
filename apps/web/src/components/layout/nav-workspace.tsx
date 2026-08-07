@@ -5,7 +5,6 @@ import {
   IconHome,
   IconChat,
   IconPhone,
-  IconBox,
   IconCrm,
   NavLink,
   NavGroupBlock,
@@ -32,7 +31,6 @@ export function NavWorkspace({
       label: "Arbeiten",
       items: [
         { href: "/chat", label: "hAIway Cockpit", icon: IconChat },
-        { href: "/automatisierungen", label: "Automatisierungen", icon: IconBox },
         ...(hasCrm
           ? [
               crmLaunchUrl

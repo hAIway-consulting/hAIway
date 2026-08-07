@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CalendarPage() {
   const calendar = await getCalendarIntegration();
-  const isConnected = calendar?.status === "active" && !!calendar.refresh_token;
+  const isConnected = calendar?.status === "active" && calendar.has_refresh_token;
   const settings = calendar?.settings ?? {
     default_duration_minutes: 30,
     buffer_minutes: 15,

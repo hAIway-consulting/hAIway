@@ -25,26 +25,3 @@ export async function listCompanies(options?: { limit?: number }): Promise<Compa
   if (error) throw error;
   return data ?? [];
 }
-
-export async function countCompanies(): Promise<number> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { count } = await db
-    .from("companies")
-    .select("*", { count: "exact", head: true })
-    .eq("organization_id", orgId);
-  return count ?? 0;
-}
-
-export async function getCompanyById(id: string): Promise<Company | null> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { data, error } = await db
-    .from("companies")
-    .select("*")
-    .eq("id", id)
-    .eq("organization_id", orgId)
-    .single();
-  if (error) return null;
-  return data;
-}

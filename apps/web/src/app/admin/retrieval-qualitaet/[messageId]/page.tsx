@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { isPlatformAdmin } from "@/lib/db/queries/organization";
 import { getMessageDetail } from "../actions";
 import ReviewForm from "./review-form";
 
@@ -10,6 +11,9 @@ export default async function MessageReviewPage({
 }: {
   params: Promise<{ messageId: string }>;
 }) {
+  // Cross-tenant view — same reasoning as the overview page.
+  if (!(await isPlatformAdmin().catch(() => false))) redirect("/");
+
   const { messageId } = await params;
   const detail = await getMessageDetail(messageId);
   if (!detail) notFound();

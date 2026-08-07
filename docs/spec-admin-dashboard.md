@@ -7,28 +7,28 @@
 
 # Admin-Dashboard — Spezifikation
 
+> **Hinweis (Audit vom 2026-08-06):** Skills und Automatisierungen wurden im Zuge des
+> Feature-Audits ersatzlos aus Code und Datenbank entfernt und werden später neu
+> spezifiziert. Die zugehörigen Abschnitte dieser Spezifikation sind entfallen; die
+> Nummerierung bleibt erhalten, damit Querverweise aus Code und anderen Specs gültig bleiben.
+
 ## 1. Zweck
 
-Das Admin-Dashboard ist die **rein interne**, kundenübergreifende Sicht der Plattform (Persona `haiway`, Gate `profiles.is_platform_admin`). Für das Cockpit liefert es vier Dinge: die Automatisierungs-Bibliothek (Cockpit-Spec §10), die Skill-Bibliothek für branchen-scoped Skills, das zentrale Provider-/Key-Management und die Plattform-Observability über Runs und AI-Kosten. Kein Inhalt dieser Sichten ist jemals kundenseitig sichtbar.
+Das Admin-Dashboard ist die **rein interne**, kundenübergreifende Sicht der Plattform (Persona `haiway`, Gate `profiles.is_platform_admin`). Für das Cockpit liefert es zwei Dinge: das zentrale Provider-/Key-Management und die Plattform-Observability über Runs und AI-Kosten. Kein Inhalt dieser Sichten ist jemals kundenseitig sichtbar.
 
 **Strategy Fit:** Cross-Tenant-Übersicht und Wiederverwendung (Outcome-Templates-Roadmap) sind Orchestrator-Kernfunktionen; alles bleibt multi-tenant-fähig und branchenagnostisch im Kern.
 
 ## 2. Ist-Stand & Einordnung
 
-Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) mit Feature-Toggles und Plan-Tiers, `/admin/automatisierungen`, `/admin/integrationen` (Runs, KPI-Tageswerte, DLQ), `/admin/ai-settings`, Branding. Diese Spec erweitert das um die Cockpit-bezogenen Cross-Tenant-Sichten; Tabellen kommen aus der Cockpit-Spec §13/§16.
+Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) mit Feature-Toggles und Plan-Tiers, `/admin/integrationen` (Runs, KPI-Tageswerte, DLQ), `/admin/ai-settings`. Die Branding-Verwaltung ist mit dem Audit vom 2026-08-06 entfallen (nur der Lesepfad für Anzeigename/Kürzel/Logo in der Shell bleibt). Diese Spec erweitert das um die Cockpit-bezogenen Cross-Tenant-Sichten; Tabellen kommen aus der Cockpit-Spec §13/§16.
 
 ## 3. Automatisierungs-Bibliothek (cross-tenant)
 
-- **Katalog:** alle `automations` über alle Tenants — gruppierbar nach `key` (gleiche Automatisierung bei mehreren Kunden), mit Status, zuständigem Berater (`owner`), benötigten Providern und KPI-Summen (`get_workflow_kpi()` je Org).
-- **Template → Instanz:** wiederkehrende Automatisierungen werden als Template gepflegt (`automation_templates`: key, Beschreibung, `requires`, Default-Konfiguration, Branchen-Tag) und pro Tenant instanziiert — Anschluss an den Roadmap-Slot „Outcome-Templates pro Branche". Die Instanz bleibt tenant-scoped und individuell anpassbar (Cockpit-Spec §10: „immer individuell entwickelt" — das Template ist Startpunkt, kein Zwang).
-- **Gesundheits-Übersicht:** Fehlerraten und letzte Läufe je Instanz (aus `workflow_runs`), damit Probleme auffallen, bevor der Kunde sie meldet.
+*Entfallen (Audit vom 2026-08-06).* Der Automatisierungs-Komplex inkl. `automations`, `automation_templates` und `workflow_runs` wurde vollständig entfernt und wird neu spezifiziert.
 
 ## 4. Skill-Bibliothek (cross-tenant / Branche)
 
-- **Kuratierung:** branchen-scoped Skills (`skills` mit `organization_id IS NULL` + `industry_scope`) werden hier angelegt, versioniert und gepflegt — sie sind die wiederverwendbaren Bausteine, die Berater pro Tenant aktivieren.
-- **Rollout:** Zuweisung eines Bibliotheks-Skills an Tenants (erzeugt tenant-scoped Aktivierung, die der Berater im Berater-Dashboard sieht und freigibt — Berater bleibt im Lead, der Rollout allein schaltet nichts beim Kunden frei).
-- **Versions-Übersicht:** welche Tenants auf welcher Skill-Version laufen; Hinweis bei veralteten Versionen.
-- **Herkunft:** gelungene tenant-spezifische Skills können in die Bibliothek „promoted" werden (Kopie ohne Tenant-Daten/Parameter — Review durch Plattform-Admin).
+*Entfallen (Audit vom 2026-08-06).* Die Skills-Registry wurde vollständig entfernt und wird neu spezifiziert.
 
 ## 5. Provider- & Key-Management (zentral)
 
@@ -39,7 +39,7 @@ Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) 
 
 ## 6. Plattform-Observability & Kosten
 
-- **Runs cross-tenant:** aggregierte Sicht über `agent_runs`, `skill_runs`, `workflow_runs` (Volumen, Fehlerraten, p95-Dauer je Tenant/Tag) — Erweiterung des bewährten `integration_kpi_daily`-Musters um entsprechende Views.
+- **Runs cross-tenant:** aggregierte Sicht über `agent_runs` (Volumen, Fehlerraten, p95-Dauer je Tenant/Tag) — Erweiterung des bewährten `integration_kpi_daily`-Musters um entsprechende Views.
 - **AI-Kosten cross-tenant:** `ai_usage_events`-Rollup über alle Tenants nach Provider/Modell/Zweck; Gegenüberstellung Kosten ↔ Plan-Tier des Kunden als Grundlage für den Roadmap-Slot „Pricing-Refresh".
 - **Quoten-Alarme:** Tenants nahe an oder über `plan_tiers.limits` auf einen Blick.
 - **Audit-Zugriff:** Drill-down in einzelne Runs (Digests, keine Roh-Kundendaten als Default) für Support- und Incident-Fälle; jeder Drill-down wird selbst protokolliert.
@@ -52,14 +52,11 @@ Vorhanden unter `/admin/*` für Plattform-Admins: Kundenliste (`/admin/kunden`) 
 
 ## 8. Datenmodell-Ergänzungen (nur dieses Dashboard)
 
-- `automation_templates`: `id`, `key`, `name`, `description`, `requires` (Provider-Liste), `default_config` (JSONB), `industry_tag`, `version`.
-- `automations.template_id` (nullable FK) zur Herkunfts-Verknüpfung.
-- Cross-Tenant-Views: `agent_runs_daily`, `skill_runs_daily`, `ai_usage_platform_daily` (SECURITY DEFINER, nur Plattform-Admin).
+- Cross-Tenant-Views: `agent_runs_daily`, `ai_usage_platform_daily` (SECURITY DEFINER, nur Plattform-Admin).
 - `admin_audit_log` für Drill-down-Zugriffe (§6): `actor`, `target_org_id`, `resource`, `occurred_at`.
 
 ## 9. Offene Entscheidungen
 
-- Ob die Skill-„Promotion" (§4) automatisiert anonymisiert oder immer manuell kopiert wird.
 - Abrechnungsrelevanz der Kostenschätzung: reicht die statische Preistabelle (Cockpit-Spec §19) oder braucht Pricing-Refresh exakte Provider-Abrechnungsdaten?
 - Aufbewahrungsfristen für Run-Historien und `ai_usage_events` (Datenvolumen vs. Audit-Anforderungen; ggf. Partitionierung wie bei `raw_events`).
 - Ob Quoten-Alarme aktiv benachrichtigen (E-Mail an zuständigen Berater) oder nur im Dashboard erscheinen.

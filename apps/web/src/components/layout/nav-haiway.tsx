@@ -8,9 +8,9 @@ import {
   IconChat,
   IconPlug,
   IconAdmin,
-  IconBox,
-  IconSources,
   IconShield,
+  IconImport,
+  IconTrash,
   IconCrm,
   NavLink,
   NavGroupBlock,
@@ -22,8 +22,8 @@ import {
  * Plattform-Org). Operatives + strategisches Cockpit für unser Team. Gruppen:
  *  - Mission Control (Status + Plattform-Health)
  *  - Kunden (Pilotkunden)
- *  - Berater (eigener Arbeitsbereich — Cockpit + Automatisierungen)
- *  - Bibliothek (cross-tenant Automatisierungen + Skills, admin spec §3/§4)
+ *  - Berater (eigener Arbeitsbereich — Cockpit)
+ *  - Daten (Dateien, verbundene Quellen, Papierkorb, Berechtigungen)
  *  - Plattform (Integrationen, KI-Settings, AI-Keys, AI-Kosten, Retrieval)
  *
  * "Mein Unternehmen" lebt nicht mehr unter Kunden — Organisationseinstellungen
@@ -56,15 +56,16 @@ export function NavHaiway({
       label: "Berater",
       items: [
         { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
-        { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
         ...(hasCrm ? [crmItem] : []),
       ],
     },
     {
-      label: "Bibliothek",
+      label: "Daten",
       items: [
-        { href: "/admin/bibliothek/automatisierungen", label: "Automatisierungen", icon: IconBox },
-        { href: "/admin/bibliothek/skills", label: "Skills", icon: IconSources },
+        { href: "/sources", label: "Dateien", icon: IconImport },
+        { href: "/quellen", label: "Verbundene Quellen", icon: IconPlug },
+        { href: "/papierkorb", label: "Papierkorb", icon: IconTrash },
+        { href: "/berechtigungen", label: "Berechtigungen", icon: IconShield },
       ],
     },
     {

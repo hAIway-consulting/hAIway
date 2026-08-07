@@ -3,11 +3,8 @@ import { listMyConversations } from "@/app/chat/actions";
 import { countReadySources } from "@/lib/db/queries/sources";
 import { createUserClient, getUser } from "@/lib/db/supabase-server";
 import { requireOrgId } from "@/lib/db/org-context";
-import { listAutomations, type Automation } from "@/lib/db/queries/workflows";
-import { formatMinutesSaved, formatPerRunMinutes } from "@/lib/format-minutes";
 import { HeroAsk } from "./hero-ask";
-import { AgentTile } from "./agent-tile";
-import { STUB_AGENTS, type WorkspaceAgent } from "./agents";
+import { AgentTile, type AgentTileData } from "./agent-tile";
 import { listVisibleSavedAgents } from "@/lib/db/queries/saved-agents";
 import { hasFeature } from "@/lib/features/flags";
 import { resolveAgentConfig } from "@/lib/ai/agent/config";
@@ -57,12 +54,10 @@ export async function WorkspaceHome() {
     countReadySources().catch(() => 0),
   ]);
 
-  let automations: Automation[] = [];
-  let agents: WorkspaceAgent[] = STUB_AGENTS;
+  let agents: AgentTileData[] = [];
   let agentAvailable = false;
   try {
     const orgId = await requireOrgId();
-    automations = await listAutomations(orgId);
 
     const [agentFlag, agentCfg] = await Promise.all([
       hasFeature("agent_mode").catch(() => false),
@@ -70,22 +65,20 @@ export async function WorkspaceHome() {
     ]);
     agentAvailable = agentFlag && agentCfg.available;
 
-    // DB-backed saved agents (spec-cockpit.md §9); STUB_AGENTS stay as a
-    // fallback until the foundation migration is pushed + seeded.
+    // DB-backed saved agents (spec-cockpit.md §9). An empty list renders the
+    // honest empty state instead of hardcoded placeholder tiles.
     const saved = await listVisibleSavedAgents(orgId);
-    if (saved.length > 0) {
-      const accents: WorkspaceAgent["accent"][] = ["teal", "violet", "sky", "amber", "rose"];
-      agents = saved.map((a, i) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        prompt: a.prompt,
-        accent: a.ui.accent ?? accents[i % accents.length],
-        icon: a.ui.icon ?? "draft",
-      }));
-    }
+    const accents: AgentTileData["accent"][] = ["teal", "violet", "sky", "amber", "rose"];
+    agents = saved.map((a, i) => ({
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      accent: a.ui.accent ?? accents[i % accents.length],
+      icon: a.ui.icon ?? "draft",
+    }));
   } catch {
-    automations = [];
+    /* no org context or agent config available — render the empty state */
+    agents = [];
   }
 
   const lastChatTime = conversations[0]?.last_message_at;
@@ -122,7 +115,7 @@ export async function WorkspaceHome() {
             Heute
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <StatCard
             label="Wissensquellen verfügbar"
             value={String(sourceCount)}
@@ -133,33 +126,8 @@ export async function WorkspaceHome() {
             value={lastChatTime ? relativeTime(lastChatTime) : "—"}
             hint={lastChatTime ? conversations[0]?.title ?? "" : "Noch keine Chats"}
           />
-          <StatCard
-            label="Status"
-            value="Bereit"
-            hint="Plattform läuft, Daten frisch"
-            tone="success"
-          />
         </div>
       </section>
-
-      {/* ── Automatisierungen ── */}
-      {automations.length > 0 && (
-        <section className="w-full max-w-5xl mt-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[13px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>
-              Automatisierungen
-            </h2>
-            <Link href="/automatisierungen" className="text-[12px] font-medium" style={{ color: "var(--color-accent)" }}>
-              Details →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            {automations.map((a) => (
-              <AutomationCard key={a.key} a={a} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ── Deine Agenten ── */}
       <section className="w-full max-w-5xl mt-10">
@@ -171,11 +139,24 @@ export async function WorkspaceHome() {
             One-Click — Pre-Prompt + deine Daten
           </span>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {agents.map((agent) => (
-            <AgentTile key={agent.id} agent={agent} />
-          ))}
-        </div>
+        {agents.length === 0 ? (
+          <div
+            className="rounded-2xl p-5 text-center text-[13px]"
+            style={{
+              background: "var(--color-panel)",
+              border: "1px dashed var(--color-line)",
+              color: "var(--color-muted)",
+            }}
+          >
+            Noch keine Agenten hinterlegt — euer Berater richtet sie im Cockpit ein.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            {agents.map((agent) => (
+              <AgentTile key={agent.id} agent={agent} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Verlauf lebt im Cockpit (spec §2) — hier nur der Einstieg. */}
@@ -200,12 +181,10 @@ function StatCard({
   label,
   value,
   hint,
-  tone = "default",
 }: {
   label: string;
   value: string;
   hint?: string;
-  tone?: "default" | "success";
 }) {
   return (
     <div
@@ -223,7 +202,7 @@ function StatCard({
         className="text-2xl md:text-3xl font-bold mt-1 leading-tight"
         style={{
           fontFamily: "var(--font-display)",
-          color: tone === "success" ? "var(--color-success)" : "var(--color-text)",
+          color: "var(--color-text)",
         }}
       >
         {value}
@@ -237,65 +216,3 @@ function StatCard({
   );
 }
 
-function AutomationCard({ a }: { a: Automation }) {
-  const rate = a.kpi.total > 0 ? Math.round((a.kpi.success / a.kpi.total) * 100) : null;
-  const handlungsbedarf = a.kpi.failed > 0;
-  // KPI v1 (spec-cockpit.md §10): saved time = per-run value × successful runs
-  const minutesSaved = a.minutesSavedPerRun * a.kpi.success;
-  return (
-    <Link
-      href="/automatisierungen"
-      className="block rounded-2xl p-5 transition-all hover:-translate-y-0.5"
-      style={{
-        background: "var(--color-panel)",
-        border: handlungsbedarf ? "1px solid var(--color-danger)" : "1px solid var(--color-line)",
-        boxShadow: "var(--shadow-sm)",
-      }}
-    >
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="text-[15px] font-semibold truncate" style={{ color: "var(--color-text)" }}>
-          {a.name}
-        </span>
-        <span
-          className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
-          style={{
-            background: a.active ? "var(--color-success-soft)" : "var(--color-bg-elevated)",
-            color: a.active ? "var(--color-success)" : "var(--color-muted)",
-          }}
-        >
-          {a.active ? "Aktiv" : "Inaktiv"}
-        </span>
-      </div>
-      <p className="text-[12px] mb-3" style={{ color: "var(--color-muted)" }}>{a.description}</p>
-      <div className="flex gap-5">
-        <AutoStat label="Tickets" value={String(a.kpi.total)} />
-        <AutoStat label="Erfolg" value={rate == null ? "—" : `${rate}%`} tone="success" />
-        <AutoStat label="Fehler" value={String(a.kpi.failed)} tone={handlungsbedarf ? "danger" : "default"} />
-      </div>
-      {a.minutesSavedPerRun > 0 && (
-        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-success)" }}>
-          spart ~{formatPerRunMinutes(a.minutesSavedPerRun)} Min pro Lauf
-          {minutesSaved > 0 && <> · {formatMinutesSaved(minutesSaved)} gesamt</>}
-        </p>
-      )}
-      {handlungsbedarf && (
-        <p className="text-[12px] mt-3 font-medium" style={{ color: "var(--color-danger)" }}>
-          ⚠ {a.kpi.failed} {a.kpi.failed === 1 ? "Fall benötigt" : "Fälle benötigen"} Aufmerksamkeit.
-        </p>
-      )}
-    </Link>
-  );
-}
-
-function AutoStat({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "danger" }) {
-  const color =
-    tone === "success" ? "var(--color-success)" :
-    tone === "danger"  ? "var(--color-danger)"  :
-                         "var(--color-text)";
-  return (
-    <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-placeholder)" }}>{label}</span>
-      <span className="text-lg font-bold leading-tight" style={{ fontFamily: "var(--font-display)", color }}>{value}</span>
-    </div>
-  );
-}

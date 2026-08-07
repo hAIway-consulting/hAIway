@@ -131,7 +131,8 @@ Danach `https://<CRM_DOMAIN>` öffnen → Admin-Konto + Workspace anlegen
 
 - Der Twenty-API-Key liegt in `organization_integrations.credentials` und wird
   ausschließlich serverseitig gelesen (Edge Function / Service-Client) — nie im Browser.
-  Bekanntes plattformweites Follow-up: Credentials-Spalte ist für Org-Mitglieder
-  row-lesbar (Bestandsmuster, betrifft auch Trello/Shopware).
+  Seit dem Audit vom 2026-08-06 ist die `credentials`-Spalte per Spalten-GRANT für
+  `authenticated` gesperrt (Migration 20260806130000 §3) — dasselbe gilt für alle
+  anderen Provider, z. B. Trello.
 - VPS: nur Ports 22/80/443 offen, SSH nur per Key, unattended-upgrades aktiv.
 - `ENCRYPTION_KEY`/`APP_SECRET` nur in `/opt/twenty/.env` (Server) — nie ins Repo.

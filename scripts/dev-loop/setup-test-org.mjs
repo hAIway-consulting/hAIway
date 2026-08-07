@@ -7,9 +7,12 @@
 import { createClient } from "@supabase/supabase-js";
 
 const ORG_SLUG = "claude-test";
+
+// Credentials come from the environment only — a password that is valid in a
+// real Supabase project does not belong in source.
 const TESTER = {
-  email: "claude-tester@bernwald.net",
-  password: "Test1234!",
+  email: process.env.TEST_LOGIN_CLAUDE_TESTER_EMAIL,
+  password: process.env.TEST_LOGIN_CLAUDE_TESTER_PASSWORD,
   full_name: "[CLAUDE-TEST] Tester",
 };
 
@@ -17,6 +20,15 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env.");
+  process.exit(1);
+}
+if (!TESTER.email || !TESTER.password) {
+  console.error(
+    "Missing TEST_LOGIN_CLAUDE_TESTER_EMAIL / TEST_LOGIN_CLAUDE_TESTER_PASSWORD in env.",
+  );
+  console.error(
+    "Run with: node --env-file=apps/web/.env.local scripts/dev-loop/setup-test-org.mjs",
+  );
   process.exit(1);
 }
 
@@ -131,7 +143,9 @@ async function main() {
     }
   }
 
-  console.log(`\nReady. Login: ${TESTER.email} / ${TESTER.password}`);
+  console.log(
+    `\nReady. Login: ${TESTER.email} (Passwort aus TEST_LOGIN_CLAUDE_TESTER_PASSWORD)`,
+  );
 }
 
 main().catch((e) => {

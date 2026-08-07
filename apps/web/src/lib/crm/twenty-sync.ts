@@ -46,7 +46,18 @@ export async function runTwentySync(
     .eq("provider_id", PROVIDER_ID)
     .maybeSingle<{ config: { base_url?: string } }>();
 
+  // The schema keeps mock:// out of the production form
+  // (lib/validation/schemas.ts), but a legacy row in the DB — e.g. written
+  // directly by scripts/dev-loop/setup-test-org.mjs — would still land here and
+  // silently fake every provisioning step. Fail loudly in production instead.
   if (integration?.config?.base_url?.startsWith("mock://")) {
+    if (process.env.NODE_ENV === "production") {
+      return {
+        ok: false,
+        error:
+          "Die CRM-Verbindung zeigt auf eine Mock-Adresse (mock://) — in der Produktion nicht zulässig. Bitte unter Admin → CRM die echte Twenty-URL hinterlegen.",
+      };
+    }
     return runMockSync(orgId, action, params);
   }
 
