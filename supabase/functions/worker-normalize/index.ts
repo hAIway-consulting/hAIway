@@ -3,13 +3,23 @@
 // Drains the `normalize` pgmq queue. For each message, looks up the matching
 // raw_events row and upserts a typed entity into the appropriate Silver
 // table. Currently knows how to normalize:
-//   * google_calendar / calendar_event → entities_calendar_events
+//   * sharepoint / google_drive drive_item → sources (+ embed queue)
 //
 // New entity types are added by extending the NORMALIZERS map. Anything
 // unknown is acked silently (the raw row is preserved for later replay).
+//
+// The google_calendar branch was removed in the 2026-08-06 audit: its target
+// table entities_calendar_events had no readers at all. The phone assistant
+// talks to Google Calendar through calendar_integrations +
+// _shared/google-calendar.ts and is unaffected.
 
 import type { NormalizeMsg } from "@haiway/contracts/queue-messages";
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { readBatch, ack, deadLetter, enqueue, queueLength } from "../_shared/queue.ts";
 import { flattenPayloadToText } from "../_shared/normalize.ts";
 
@@ -24,9 +34,8 @@ type Normalizer = (
 ) => Promise<void>;
 
 const NORMALIZERS: Record<string, Normalizer> = {
-  "google_calendar:calendar_event": normalizeGoogleCalendarEvent,
-  "sharepoint:drive_item":          normalizeDriveItem,
-  "google_drive:drive_item":        normalizeDriveItem,
+  "sharepoint:drive_item":   normalizeDriveItem,
+  "google_drive:drive_item": normalizeDriveItem,
 };
 
 // Connector drive items: upsert into the sources table via the
@@ -256,41 +265,15 @@ function splitSheetSection(section: string, maxChars: number): string[] {
   return parts.length > 0 ? parts : [section.slice(0, maxChars)];
 }
 
-async function normalizeGoogleCalendarEvent(
-  msg: NormalizeMsg,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  const supabase = getServiceClient();
-
-  const start = (payload.start as Record<string, unknown> | undefined)?.dateTime
-             ?? (payload.start as Record<string, unknown> | undefined)?.date;
-  const end   = (payload.end   as Record<string, unknown> | undefined)?.dateTime
-             ?? (payload.end   as Record<string, unknown> | undefined)?.date;
-  const organizer = payload.organizer as Record<string, unknown> | undefined;
-
-  const { error } = await supabase
-    .from("entities_calendar_events")
-    .upsert({
-      organization_id: msg.organization_id,
-      provider_id:     msg.provider_id,
-      external_id:     msg.external_id,
-      payload_hash:    msg.payload_hash,
-      summary:         (payload.summary as string)     ?? null,
-      description:     (payload.description as string) ?? null,
-      starts_at:       start ? new Date(start as string).toISOString() : null,
-      ends_at:         end   ? new Date(end   as string).toISOString() : null,
-      location:        (payload.location as string) ?? null,
-      organizer_email: (organizer?.email as string) ?? null,
-      attendees:       payload.attendees ?? [],
-      raw:             payload,
-      updated_at:      new Date().toISOString(),
-    }, { onConflict: "organization_id,provider_id,external_id" });
-
-  if (error) throw error;
-}
-
 Deno.serve(async (req) => {
   try {
+  // verify_jwt only proves that SOME valid token was sent — the public anon
+  // key qualifies. The cron authenticates with the service role key
+  // (20260806150000), so anything else is rejected: draining this queue costs
+  // real IO and downstream embedding budget.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
+
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
 
   // Conditional polling: a single COUNT against pgmq.metrics is much cheaper

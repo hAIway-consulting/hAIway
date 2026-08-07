@@ -16,7 +16,12 @@
 // state lands in member_app_permissions.sync_status / sync_error and the
 // response is 200 { ok: false, error } for action-level failures.
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import {
   type TwentyConfig,
   TwentyAuthError,
@@ -362,6 +367,16 @@ async function actionReconcile(orgId: string) {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
+
+  // Server-to-server only. organization_id is taken straight from the body and
+  // every DB access runs through the service client, which bypasses RLS —
+  // verify_jwt=true alone would let ANY valid token (including the public anon
+  // key) grant/revoke CRM access for an arbitrary organization. The single
+  // legitimate caller is apps/web/src/lib/crm/twenty-sync.ts, which sends
+  // SUPABASE_SERVICE_ROLE_KEY as bearer. There is no pg_cron job for this
+  // function.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   let body: {
     organization_id?: string;

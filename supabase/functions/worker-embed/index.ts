@@ -10,7 +10,12 @@
 // chat surface query `content_chunks` directly, so once this worker has
 // processed an entity it is immediately available to the AI layer.
 
-import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
+import {
+  getServiceClient,
+  jsonResponse,
+  errorResponse,
+  requireServiceRole,
+} from "../_shared/supabase.ts";
 import { readBatch, ack, deadLetter, enqueue, queueLength } from "../_shared/queue.ts";
 import { embedText } from "../_shared/embeddings.ts";
 import { chunkText, chunkTabularText, chunkVerticalText } from "../_shared/chunking.ts";
@@ -48,6 +53,13 @@ interface EmbedMsg {
 }
 
 Deno.serve(async (req) => {
+  // verify_jwt only proves that SOME valid token was sent — the public anon
+  // key qualifies. The cron authenticates with the service role key
+  // (20260806150000); every embed call spends OpenAI budget, so nothing else
+  // may drive this worker.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
+
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
 
   // Conditional polling: skip the heavier pgmq.read + embedding pipeline

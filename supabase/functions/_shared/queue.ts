@@ -8,7 +8,10 @@
 
 import { getServiceClient } from "./supabase.ts";
 
-export type QueueName = "ingest" | "normalize" | "embed" | "index" | "extract";
+// The three queues that actually exist. 'ingest' and 'index' were created by
+// 20260406100000 but never got a producer or a consumer; they are dropped by
+// 20260806170000_drop_dead_pgmq_queues.sql, so they must not be nameable here.
+export type QueueName = "normalize" | "embed" | "extract";
 
 export interface QueueMessage<T = unknown> {
   msg_id:     number;

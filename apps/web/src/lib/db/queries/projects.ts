@@ -25,26 +25,3 @@ export async function listProjects(options?: { limit?: number }): Promise<Projec
   if (error) throw error;
   return data ?? [];
 }
-
-export async function countProjects(): Promise<number> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { count } = await db
-    .from("projects")
-    .select("*", { count: "exact", head: true })
-    .eq("organization_id", orgId);
-  return count ?? 0;
-}
-
-export async function getProjectById(id: string): Promise<Project | null> {
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-  const { data, error } = await db
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .eq("organization_id", orgId)
-    .single();
-  if (error) return null;
-  return data;
-}

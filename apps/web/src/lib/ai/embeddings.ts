@@ -78,7 +78,3 @@ export async function embedBatch(texts: string[], orgId?: string): Promise<(numb
 export function getOpenAIKeyForChat(): string | undefined {
   return getOpenAIKey();
 }
-
-export function hasEmbeddingKey(): boolean {
-  return !!getOpenAIKey();
-}

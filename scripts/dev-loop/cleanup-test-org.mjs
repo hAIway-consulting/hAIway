@@ -11,8 +11,14 @@ const TEST_ORG_SLUG = "claude-test";
 // Order matters: child rows before parent rows. Tables not present in this
 // list are either irrelevant (e.g. plan_tier_features = global) or covered by
 // ON DELETE CASCADE from one of the listed parents.
+// ai_usage_events.ref_id points at chat_messages / agent_runs without an FK, so
+// it is deleted before them. agent_runs and saved_agents both reference
+// chat_conversations and must precede it.
 const TENANT_TABLES_IN_DELETE_ORDER = [
   "chat_message_reviews",
+  "ai_usage_events",
+  "agent_runs",
+  "saved_agents",
   "chat_messages",
   "chat_conversations",
   "content_chunks",
@@ -22,26 +28,23 @@ const TENANT_TABLES_IN_DELETE_ORDER = [
   "permission_group_members",
   "permission_groups",
   "sources",
-  "entity_tags",
-  "tags",
   "contacts",
   "companies",
   "projects",
   "activity_links",
   "activities",
-  "process_instance_steps",
-  "process_instances",
-  "process_template_steps",
-  "process_templates",
   "kpi_events",
-  "kpi_baselines",
   "connector_sync_log",
-  "entity_mappings",
-  "entities_calendar_events",
   "calendar_integrations",
   "phone_numbers",
   "phone_assistants",
   "call_logs",
+  "member_app_permissions",
+  "raw_events",
+  "integration_runs",
+  "job_failures",
+  "app_launch_events",
+  "ai_provider_keys",
   "organization_integrations",
   "organization_features",
 ];

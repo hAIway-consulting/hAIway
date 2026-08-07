@@ -391,19 +391,6 @@ async function hasActiveCalendarIntegration(orgId: string): Promise<boolean> {
 
 const CALENDAR_PROMPT_EXTENSION = "\n\nDu kannst Termine vereinbaren. Nutze check_available_slots um freie Zeiten zu pruefen und schedule_appointment um einen Termin zu erstellen. Frage den Anrufer nach gewuenschtem Datum, Uhrzeit und Dauer bevor du einen Termin erstellst.";
 
-// ─── PHONE NUMBERS ─────────────────────────────────────────────────────────
-
-export async function updatePhoneNumberName(phoneNumberId: string, displayName: string) {
-  const orgId = await requireOrgId();
-  const db = createServiceClient();
-  await db
-    .from("phone_numbers")
-    .update({ display_name: displayName.trim() || null })
-    .eq("id", phoneNumberId)
-    .eq("organization_id", orgId);
-  revalidatePath("/telefon-assistent/nummern");
-}
-
 // ─── CALENDAR INTEGRATION ──────────────────────────────────────────────────
 
 export async function saveCalendarSettings(formData: FormData) {
@@ -593,17 +580,4 @@ export async function getTestCallConfig(): Promise<{
   }
 
   return { ok: true, assistantId: pa.provider_assistant_id, assistantName: pa.name ?? undefined };
-}
-
-// ─── CALL LOGS ─────────────────────────────────────────────────────────────
-
-export async function deleteCallLog(callLogId: string) {
-  const orgId = await requireOrgId();
-  const db = createServiceClient();
-  await db
-    .from("call_logs")
-    .delete()
-    .eq("id", callLogId)
-    .eq("organization_id", orgId);
-  revalidatePath("/telefon-assistent");
 }

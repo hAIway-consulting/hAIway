@@ -10,7 +10,7 @@ import { VapiActionButton } from "@/components/phone/vapi-action-button";
 export default async function AssistantSettingsPage() {
   const assistant = await getAssistant();
   const calendar = await getCalendarIntegration();
-  const isCalendarConnected = calendar?.status === "active" && !!calendar?.refresh_token;
+  const isCalendarConnected = calendar?.status === "active" && !!calendar?.has_refresh_token;
 
   return (
     <div className={page.narrow}>

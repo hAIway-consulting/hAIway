@@ -20,7 +20,6 @@ export default async function AiSettingsPage() {
   const ai = ((data?.settings as Record<string, unknown> | null)?.ai ?? {}) as {
     system_prompt?: string;
     tone?: string;
-    language?: string;
     agent?: { provider?: string; model?: string; base_url?: string };
   };
   const agent = ai.agent ?? {};
@@ -45,7 +44,6 @@ export default async function AiSettingsPage() {
       <AiSettingsForm
         initialPrompt={ai.system_prompt ?? ""}
         initialTone={(ai.tone as "formal" | "casual" | "neutral") ?? "neutral"}
-        initialLanguage={(ai.language as "de" | "en") ?? "de"}
         initialAgentProvider={agentProvider}
         initialAgentModel={agent.model ?? ""}
         initialAgentBaseUrl={agent.base_url ?? ""}

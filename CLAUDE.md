@@ -91,12 +91,12 @@ Trivial = Bugfix, Typo, Style-Token-Korrektur, reine Doku-Edits. Alles andere du
 
 **Test-Daten — Sandbox-Org `claude-test`:**
 - Org-ID: `c20b8a68-363c-4df9-9409-bbf1a881b072` (Slug `claude-test`, Name `[CLAUDE-TEST] Sandbox`).
-- Tester-Login: `claude-tester@bernwald.net` / `Test1234!` (Rolle `admin`, `is_default=true`).
+- Tester-Login: E-Mail und Passwort stehen ausschliesslich in `apps/web/.env.local` unter `TEST_LOGIN_CLAUDE_TESTER_EMAIL` / `TEST_LOGIN_CLAUDE_TESTER_PASSWORD` (Rolle `admin`, `is_default=true`). Niemals ins Repo schreiben.
 - Setup neu/idempotent: `node --env-file=apps/web/.env.local scripts/dev-loop/setup-test-org.mjs`
 - Aufraeumen nach jedem Iterationsblock: `node --env-file=apps/web/.env.local scripts/dev-loop/cleanup-test-org.mjs` — wischt alle org-gescopeten Tabellen, laesst Org/User/Profile/Member stehen.
 - **Niemals gegen `time-keeper` (Prod-Org) testen.** Cleanup-Skript verweigert das aktiv.
 
-**Login im Test:** `GET /api/dev/test-login?user=claude-tester&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404).
+**Login im Test:** `GET /api/dev/test-login?user=claude-tester&next=/<ziel>` setzt das Supabase-Cookie und redirected. Endpoint ist hard-disabled wenn `NODE_ENV !== "development"` (gibt 404). Fehlen die `TEST_LOGIN_*`-Variablen, antwortet der Endpoint mit 503 statt still auf ein bekanntes Passwort zurueckzufallen.
 
 **Eskalation an User (Loop sofort stoppen, kurz melden):**
 - Mehr als **5 Iterationen** fuer denselben Bug
@@ -135,7 +135,12 @@ MICROSOFT_CLIENT_SECRET=
 MICROSOFT_TENANT_ID=
 NEXT_PUBLIC_VAPI_PUBLIC_KEY=
 VAPI_API_KEY=
-VAPI_SECRET=
+VAPI_SECRET=                # Shared Secret der Vapi-Webhooks. PFLICHT auch als
+                            # Supabase-Secret (`supabase secrets set`) — die
+                            # phone-assistant-Functions laufen mit
+                            # verify_jwt=false und pruefen ausschliesslich
+                            # dagegen. Fehlt es, lehnen sie seit dem Audit
+                            # 2026-08-06 jeden Aufruf ab (vorher: fail-open).
 VAPI_SERVER_URL=
 ```
 
@@ -147,6 +152,31 @@ ANTHROPIC_API_KEY=          # in Vercel NICHT gesetzt; Edge-Functions ziehen ihn
 AI_KEYS_ENCRYPTION_SECRET=  # verschluesselt ai_provider_keys (AES-256-GCM). In Vercel UND Supabase
                             # Function Secrets identisch setzen. ACHTUNG: Verlust brickt gespeicherte
                             # Tenant-Keys (Env-Fallback haelt die Plattform am Leben, Keys neu erfassen).
+```
+
+Quelle der Wahrheit ist Vercel, **Scope ausschliesslich `Development`** — damit sie
+nie in einen Production-Build geraten. Lokal holt man sie mit
+
+```bash
+npx vercel env pull .env.rotate.local --environment=development
+```
+
+in eine temporaere Datei (der Name endet auf `.local` und faellt damit unter
+`.gitignore`). Kein direktes `vercel env pull apps/web/.env.local`: das
+ueberschreibt die Datei komplett und zerstoert dabei `NEXT_PUBLIC_APP_URL`
+(muss lokal `localhost` sein) sowie `ANTHROPIC_API_KEY` (steht bewusst nicht in
+Vercel). Ohne die Variablen antwortet `/api/dev/test-login` mit 503 und die
+e2e-Specs scheitern mit klarer Meldung.
+
+Beide Personas liegen in der Sandbox-Org `claude-test` — **kein Testkonto
+gehoert in eine Produktions-Org**.
+
+```
+TEST_LOGIN_CLAUDE_TESTER_EMAIL=     # Sandbox, Rolle admin  (Persona "berater")
+TEST_LOGIN_CLAUDE_TESTER_PASSWORD=
+TEST_LOGIN_MEMBER_EMAIL=            # Sandbox, Rolle member (Persona "workspace")
+TEST_LOGIN_MEMBER_PASSWORD=
+SANDBOX_TESTER_PASSWORD=            # fuer scripts/ops/create-sandbox-org.mjs
 ```
 
 ## Agent-Workflow-Regeln

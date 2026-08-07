@@ -2,7 +2,7 @@ import { ShellTabs } from "@/components/layout/shell-tabs";
 
 /**
  * Berater-Cockpit-Verwaltung (docs/spec-berater-dashboard.md §8): one
- * section, four tabs. The /admin layout already gates on platform admin OR
+ * section, two tabs. The /admin layout already gates on platform admin OR
  * Berater (role admin/owner); every mutation re-checks via
  * requireBeraterRole() in its server action.
  */
@@ -23,16 +23,13 @@ export default function CockpitVerwaltungLayout({ children }: { children: React.
           Cockpit-Verwaltung
         </h1>
         <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-          Skills freigeben, Automatisierungen steuern, Agenten beaufsichtigen und Nutzung &amp;
-          Kosten im Blick behalten — nichts wird für den Kunden sichtbar, was hier nicht
-          freigegeben ist.
+          Agenten beaufsichtigen und Nutzung &amp; Kosten im Blick behalten — nichts wird für
+          den Kunden sichtbar, was hier nicht freigegeben ist.
         </p>
       </header>
 
       <ShellTabs
         tabs={[
-          { href: "/admin/cockpit/skills", label: "Skills" },
-          { href: "/admin/cockpit/automatisierungen", label: "Automatisierungen" },
           { href: "/admin/cockpit/agenten", label: "Agenten & Runs" },
           { href: "/admin/cockpit/modelle", label: "Modelle & Kosten" },
         ]}

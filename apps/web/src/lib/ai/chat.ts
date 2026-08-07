@@ -9,7 +9,7 @@
 //     must say so explicitly — never fabricate
 //
 // History persistence lives in `app/chat/actions.ts`. This file stays
-// stateless so it can be reused by other surfaces (phone-assistant, brand-agent).
+// stateless so it can be reused by other surfaces (e.g. phone-assistant).
 
 import type { ChunkSearchResult } from "@/lib/db/queries/search";
 import { createUserClient } from "@/lib/db/supabase-server";
@@ -65,8 +65,7 @@ Harte Regeln:
 const TOOLS_RULES = `
 
 Zusaetzlich stehen dir WERKZEUGE (Tools) zur Verfuegung, um strukturierte Echtzeit-Daten der Organisation abzufragen oder Aktionen auszufuehren:
-- Fragen zu Automatisierungen, Reklamationen/Tickets oder Integrations-Statistiken ("wie viele Reklamationen", "welche Automatisierungen laufen/sind aktiv", "Auswertung aller Reklamationsfaelle") -> nutze die passenden Tools. Deren Ergebnisse sind autoritativ und zaehlen wie Quellen; du brauchst dafuer KEINE [Q]-Marker.
-- Trello-Fragen oder -Aufraeumen -> nutze die Trello-Tools.
+- Fragen zum Trello-Board ("welche Karten sind offen", "was liegt seit Monaten brach") oder das Aufraeumen des Boards -> nutze die Trello-Tools. Deren Ergebnisse sind autoritativ und zaehlen wie Quellen; du brauchst dafuer KEINE [Q]-Marker.
 - Inhaltliche Wissensfragen ueber Dokumente -> weiterhin AUSSCHLIESSLICH aus den oben gelieferten [Q]-Quellen (die harten Regeln gelten).
 - Wenn weder Tools noch Quellen die Antwort liefern: sage transparent, dass dir die Information fehlt. Erfinde nichts.
 
@@ -75,7 +74,6 @@ Schreibende Aktionen (z. B. Trello-Bereinigung): Das System erzeugt beim Tool-Au
 type OrgAiSettings = {
   system_prompt?: string | null;
   tone?: "formal" | "casual" | "neutral" | null;
-  language?: "de" | "en" | null;
 };
 
 export async function loadOrgAiSettings(): Promise<OrgAiSettings> {

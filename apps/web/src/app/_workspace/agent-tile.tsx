@@ -1,15 +1,19 @@
 "use client";
 
 import { useTransition } from "react";
-import { startAgent, startSavedAgent } from "./actions";
-import type { WorkspaceAgent } from "./agents";
+import { startSavedAgent } from "./actions";
+import type { SavedAgentAccent, SavedAgentIcon } from "@/lib/db/queries/saved-agents";
 
-// DB-backed saved agents carry a uuid id; the pre-migration STUB_AGENTS use
-// slugs like "angebot" and keep the legacy prompt-into-chat path.
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Tile projection of a `saved_agents` row — the prompt stays server-side. */
+export type AgentTileData = {
+  id: string;
+  name: string;
+  description: string;
+  accent: SavedAgentAccent;
+  icon: SavedAgentIcon;
+};
 
-const accentVar: Record<WorkspaceAgent["accent"], { soft: string; solid: string }> = {
+const accentVar: Record<SavedAgentAccent, { soft: string; solid: string }> = {
   teal:   { soft: "color-mix(in srgb, var(--color-accent) 14%, transparent)", solid: "var(--color-accent)" },
   amber:  { soft: "color-mix(in srgb, var(--color-warning) 14%, transparent)", solid: "var(--color-warning)" },
   violet: { soft: "color-mix(in srgb, #8b5cf6 14%, transparent)",              solid: "#8b5cf6" },
@@ -17,7 +21,7 @@ const accentVar: Record<WorkspaceAgent["accent"], { soft: string; solid: string 
   sky:    { soft: "color-mix(in srgb, var(--color-info) 14%, transparent)",    solid: "var(--color-info)" },
 };
 
-function AgentIcon({ icon, color }: { icon: WorkspaceAgent["icon"]; color: string }) {
+function AgentIcon({ icon, color }: { icon: SavedAgentIcon; color: string }) {
   const props = {
     width: 22,
     height: 22,
@@ -65,22 +69,17 @@ function AgentIcon({ icon, color }: { icon: WorkspaceAgent["icon"]; color: strin
   }
 }
 
-export function AgentTile({ agent }: { agent: WorkspaceAgent }) {
+export function AgentTile({ agent }: { agent: AgentTileData }) {
   const [pending, startTransition] = useTransition();
   const colors = accentVar[agent.accent];
-  const isSavedAgent = UUID_RE.test(agent.id);
 
   return (
     <form
-      action={isSavedAgent ? startSavedAgent : startAgent}
+      action={startSavedAgent}
       onSubmit={() => startTransition(() => {})}
       className="contents"
     >
-      {isSavedAgent ? (
-        <input type="hidden" name="agentId" value={agent.id} />
-      ) : (
-        <input type="hidden" name="agentPrompt" value={agent.prompt} />
-      )}
+      <input type="hidden" name="agentId" value={agent.id} />
       <button
         type="submit"
         disabled={pending}

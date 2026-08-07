@@ -1,6 +1,6 @@
-// Trello REST API client — app-layer port of supabase/functions/_shared/trello.ts.
-// Write-focused: the orchestrator creates a card on the tenant's configured
-// list so a complaint lands on the human's working board with full context.
+// Trello REST API client.
+// Read + organise: the chat agent's Trello tools list the tenant's open cards
+// and move stale ones into a category list. Nothing is ever deleted.
 
 export interface TrelloConfig {
   api_key:          string;
@@ -35,30 +35,6 @@ export interface TrelloCard {
   url:      string;
   name:     string;
   idList:   string;
-}
-
-export interface CreateCardInput {
-  name:      string;
-  desc?:     string;
-  listId?:   string;
-  position?: "top" | "bottom" | number;
-}
-
-export async function createCard(
-  cfg:   TrelloConfig,
-  input: CreateCardInput,
-): Promise<TrelloCard> {
-  const listId = input.listId ?? cfg.default_list_id;
-  if (!listId) {
-    throw new Error("trello.createCard: no list_id (set default_list_id in config or pass listId)");
-  }
-  const params = new URLSearchParams({
-    name:   input.name,
-    desc:   input.desc ?? "",
-    idList: listId,
-    pos:    input.position?.toString() ?? "top",
-  });
-  return await call<TrelloCard>(cfg, `/cards?${params.toString()}`, { method: "POST" });
 }
 
 // ── Read + organise (used by the chat agent's Trello tools) ───────────────

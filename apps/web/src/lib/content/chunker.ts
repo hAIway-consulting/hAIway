@@ -1,3 +1,12 @@
+// Word-based chunker for manually uploaded sources (text / PDF / audio) in
+// the web app: 500-word windows with 50 words of overlap.
+//
+// Edge-function counterparts: supabase/functions/_shared/transcript-chunker.ts
+// (same parameters, phone transcripts) and
+// supabase/functions/_shared/chunking.ts (token-based, connector documents).
+// The 2026-08-06 audit cleanup kept the two chunking strategies apart on
+// purpose — see the parameter table in transcript-chunker.ts.
+
 export type Chunk = {
   chunkIndex: number;
   chunkText: string;

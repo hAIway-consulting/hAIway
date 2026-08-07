@@ -15,7 +15,7 @@ export type ChunkSearchResult = {
    * caller during merge, not by the SQL functions. Used by the admin
    * debug panel to show *why* a chunk is in the context window.
    *
-   * "entity_list" is a COMPLETE, tag/status-filtered list from the DB —
+   * "entity_list" is a COMPLETE list of operational entities from the DB —
    * the prompt treats it as exhaustive ("this is all of them"), whereas
    * all other paths are treated as selections.
    */
@@ -143,54 +143,6 @@ export async function boostedHybridSearch(
   return (data ?? []) as ChunkSearchResult[];
 }
 
-// Status-driven entity retrieval. Answers questions like
-// "alle aktiven Kunden" / "alle offenen Projekte". Status values are
-// compared case-sensitively against the entity-table `status` column.
-export async function listEntitiesByStatus(
-  types: Array<"contact" | "company" | "project">,
-  statuses: string[],
-  limit = 200,
-): Promise<ChunkSearchResult[]> {
-  if (types.length === 0 || statuses.length === 0) return [];
-
-  const orgId = await requireOrgId();
-  const db = await createUserClient();
-
-  const { data, error } = await db.rpc("list_entities_by_status", {
-    p_org_id: orgId,
-    p_types: types,
-    p_status: statuses,
-    p_limit: limit,
-  });
-  if (error) throw error;
-
-  return ((data ?? []) as Array<{
-    entity_type: string;
-    entity_id: string;
-    display_name: string;
-    entity_status: string | null;
-    company_name: string | null;
-    all_tag_names: string[];
-    chunk_text: string;
-  }>).map((row) => {
-    const title =
-      row.entity_type === "contact"
-        ? `Kontakt: ${row.display_name}`
-        : row.entity_type === "company"
-        ? `Firma: ${row.display_name}`
-        : `Projekt: ${row.display_name}`;
-    return {
-      id: `${row.entity_type}:${row.entity_id}`,
-      source_id: row.entity_id,
-      chunk_index: 0,
-      chunk_text: row.chunk_text,
-      source_title: title,
-      source_type: row.entity_type,
-      rank: 1,
-    };
-  });
-}
-
 // Search operational entity tables (companies/contacts/projects) via ILIKE.
 // Returns pseudo-chunks so they can be merged with the hybrid-search results.
 // This guarantees the chat finds rows that live in operative tables and were
@@ -265,35 +217,6 @@ export async function searchOperationalEntities(
 
   const out: ChunkSearchResult[] = [];
 
-  // Bulk-fetch tags for all returned entities so the LLM sees temperature
-  // (warm/cold) and other categorical info that lives only in the tag system.
-  const contactIds = ((contactsRes.data ?? []) as any[]).map((c) => c.id);
-  const companyIds = ((companiesRes.data ?? []) as any[]).map((c) => c.id);
-  const projectIds = ((projectsRes.data ?? []) as any[]).map((p) => p.id);
-  const allEntityIds = [...contactIds, ...companyIds, ...projectIds];
-
-  const tagsByEntity = new Map<string, string[]>();
-  if (allEntityIds.length > 0) {
-    const { data: tagRows } = await db
-      .from("entity_tags")
-      .select("entity_type, entity_id, tags(name)")
-      .eq("organization_id", orgId)
-      .in("entity_id", allEntityIds);
-    for (const row of (tagRows ?? []) as any[]) {
-      const key = `${row.entity_type}:${row.entity_id}`;
-      const name = row.tags?.name;
-      if (!name) continue;
-      const arr = tagsByEntity.get(key) ?? [];
-      arr.push(name);
-      tagsByEntity.set(key, arr);
-    }
-  }
-
-  const tagLine = (type: string, id: string): string | null => {
-    const tags = tagsByEntity.get(`${type}:${id}`);
-    return tags && tags.length > 0 ? `Tags: ${tags.join(", ")}` : null;
-  };
-
   for (const c of (contactsRes.data ?? []) as any[]) {
     const fullName = `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim();
     const company = c.companies?.name ?? "";
@@ -304,7 +227,6 @@ export async function searchOperationalEntities(
       c.email && `E-Mail: ${c.email}`,
       c.phone && `Telefon: ${c.phone}`,
       c.status && `Status: ${c.status}`,
-      tagLine("contact", c.id),
       c.notes && `Notizen: ${c.notes}`,
     ].filter(Boolean).join("\n");
     out.push({
@@ -323,7 +245,6 @@ export async function searchOperationalEntities(
       `Unternehmen: ${c.name}`,
       c.website && `Website: ${c.website}`,
       c.status && `Status: ${c.status}`,
-      tagLine("company", c.id),
       c.notes && `Notizen: ${c.notes}`,
     ].filter(Boolean).join("\n");
     out.push({
@@ -343,7 +264,6 @@ export async function searchOperationalEntities(
       `Projekt: ${p.name}`,
       company && `Kunde: ${company}`,
       p.status && `Status: ${p.status}`,
-      tagLine("project", p.id),
       p.description && `Beschreibung: ${p.description}`,
     ].filter(Boolean).join("\n");
     out.push({

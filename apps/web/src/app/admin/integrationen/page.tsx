@@ -5,7 +5,6 @@ import { replayJobFailureAction } from "./actions";
 import {
   metaFor,
   connectKindLabel,
-  VIRTUAL_PROVIDERS,
   type ProviderMeta,
 } from "./provider-meta";
 
@@ -130,20 +129,12 @@ export default async function IntegrationsAdminPage() {
     connection: ConnectionRow | null;
   };
 
-  const cards: ConnectorCardInput[] = [
-    ...providerRows.map((p) => ({
-      providerId: p.id,
-      name:       p.name,
-      meta:       metaFor(p.id),
-      connection: connectionByProvider.get(p.id) ?? null,
-    })),
-    ...VIRTUAL_PROVIDERS.map((v) => ({
-      providerId: v.id,
-      name:       v.name,
-      meta:       v.meta,
-      connection: connectionByProvider.get(v.statusFrom) ?? null,
-    })),
-  ];
+  const cards: ConnectorCardInput[] = providerRows.map((p) => ({
+    providerId: p.id,
+    name:       p.name,
+    meta:       metaFor(p.id),
+    connection: connectionByProvider.get(p.id) ?? null,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -345,7 +336,9 @@ function ConnectorCard({
               ? "Setup unvollständig"
               : isAvailable
                 ? "Nicht verbunden"
-                : "Setup folgt"}
+                : meta.connectKind === "managed"
+                  ? "Von hAIway eingerichtet"
+                  : "Nicht verfügbar"}
         </span>
         <div className="flex items-center gap-1.5">
           {isConfiguring && meta.configuringRoute && (
@@ -398,7 +391,11 @@ function ConnectorCard({
             <button
               type="button"
               disabled
-              title="Auth-Adapter folgt in einem nächsten PR"
+              title={
+                meta.connectKind === "managed"
+                  ? "Zugang wird plattformseitig konfiguriert."
+                  : "Für diesen Provider gibt es keine Self-Service-Verbindung."
+              }
               className="min-h-[36px] px-3 rounded-lg text-[12px] font-semibold cursor-not-allowed"
               style={{
                 background: "var(--color-bg-elevated)",
@@ -406,7 +403,7 @@ function ConnectorCard({
                 border:     "1px dashed var(--color-line)",
               }}
             >
-              Bald verfügbar
+              {meta.connectKind === "managed" ? "Von hAIway eingerichtet" : "Nicht verfügbar"}
             </button>
           )}
         </div>

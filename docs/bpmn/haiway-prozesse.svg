@@ -1,186 +1,173 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="3370" height="3508" viewBox="0 0 3370 3508" font-family="Segoe UI, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="3370" height="3396" viewBox="0 0 3370 3396" font-family="Segoe UI, Arial, sans-serif">
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/></marker></defs>
-<rect x="0" y="0" width="3370" height="3508" fill="#ffffff"/>
+<rect x="0" y="0" width="3370" height="3396" fill="#ffffff"/>
 <rect x="190" y="80" width="3140" height="612" fill="#f5f7fb" stroke="#cbd5e1"/>
 <text x="206" y="386" transform="rotate(-90 206 386)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Benutzer &amp; Berater</text>
 <rect x="190" y="692" width="3140" height="948" fill="#eef2f9" stroke="#cbd5e1"/>
 <text x="206" y="1166" transform="rotate(-90 206 1166)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Web-App (Next.js · Server Actions &amp; API)</text>
-<rect x="190" y="1640" width="3140" height="500" fill="#f5f7fb" stroke="#cbd5e1"/>
-<text x="206" y="1890" transform="rotate(-90 206 1890)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Connectoren &amp; Ingestion (Edge Functions)</text>
-<rect x="190" y="2140" width="3140" height="164" fill="#eef2f9" stroke="#cbd5e1"/>
-<text x="206" y="2222" transform="rotate(-90 206 2222)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">RAG-Pipeline · Worker (Bronze → Silver → Gold)</text>
-<rect x="190" y="2304" width="3140" height="500" fill="#f5f7fb" stroke="#cbd5e1"/>
-<text x="206" y="2554" transform="rotate(-90 206 2554)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Datenbank &amp; Orchestrierung (Supabase · pg_cron · RPC · Trigger)</text>
-<rect x="190" y="2804" width="3140" height="164" fill="#eef2f9" stroke="#cbd5e1"/>
-<text x="206" y="2886" transform="rotate(-90 206 2886)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Telefon-Assistent (Vapi)</text>
-<rect x="190" y="2968" width="3140" height="500" fill="#f5f7fb" stroke="#cbd5e1"/>
-<text x="206" y="3218" transform="rotate(-90 206 3218)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Externe Dienste</text>
-<rect x="160" y="80" width="3170" height="3388" fill="none" stroke="#475569" stroke-width="2"/>
-<text x="175" y="1774" transform="rotate(-90 175 1774)" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">hAIway — AI Foundation Platform</text>
-<polyline points="325,161 325,1578 585,1578 585,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="1575" text-anchor="middle" font-size="9.5" fill="#475569">OTP / Magic Link</text>
-<polyline points="585,2994 585,792" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="585,792 585,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="2327" text-anchor="middle" font-size="9.5" fill="#475569">neuer User</text>
-<polyline points="585,718 585,449 845,449 845,180" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="190" y="1640" width="3140" height="388" fill="#f5f7fb" stroke="#cbd5e1"/>
+<text x="206" y="1834" transform="rotate(-90 206 1834)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Connectoren &amp; Ingestion (Edge Functions)</text>
+<rect x="190" y="2028" width="3140" height="164" fill="#eef2f9" stroke="#cbd5e1"/>
+<text x="206" y="2110" transform="rotate(-90 206 2110)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">RAG-Pipeline · Worker (Bronze → Silver → Gold)</text>
+<rect x="190" y="2192" width="3140" height="500" fill="#f5f7fb" stroke="#cbd5e1"/>
+<text x="206" y="2442" transform="rotate(-90 206 2442)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Datenbank &amp; Orchestrierung (Supabase · pg_cron · RPC · Trigger)</text>
+<rect x="190" y="2692" width="3140" height="164" fill="#eef2f9" stroke="#cbd5e1"/>
+<text x="206" y="2774" transform="rotate(-90 206 2774)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Telefon-Assistent (Vapi)</text>
+<rect x="190" y="2856" width="3140" height="500" fill="#f5f7fb" stroke="#cbd5e1"/>
+<text x="206" y="3106" transform="rotate(-90 206 3106)" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Externe Dienste</text>
+<rect x="160" y="80" width="3170" height="3276" fill="none" stroke="#475569" stroke-width="2"/>
+<text x="175" y="1718" transform="rotate(-90 175 1718)" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">hAIway — AI Foundation Platform</text>
+<polyline points="325,161 325,1522 585,1522 585,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="585" y="1519" text-anchor="middle" font-size="9.5" fill="#475569">OTP / Magic Link</text>
+<polyline points="585,2882 585,792" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="585,792 585,2218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="585" y="2215" text-anchor="middle" font-size="9.5" fill="#475569">neuer User</text>
 <polyline points="845,180 845,449 1105,449 1105,718" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1105,792 1105,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1020,2367 930,2367" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1105,792 1105,2218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1020,2255 930,2255" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="325,292 325,561 585,561 585,830" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="585,904 585,1617 845,1617 845,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="585,904 585,1561 845,1561 845,2218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="325,292 325,561 845,561 845,830" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,904 845,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,904 845,2218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="325,292 325,673 845,673 845,1054" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,1128 845,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,1128 845,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="325,404 325,673 585,673 585,942" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="585,1016 585,2005 2145,2005 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2002" text-anchor="middle" font-size="9.5" fill="#475569">Audio: Whisper</text>
+<polyline points="585,1016 585,1949 2145,1949 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="1946" text-anchor="middle" font-size="9.5" fill="#475569">Audio: Whisper</text>
 <polyline points="670,979 760,979" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="585,404 585,1054" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="670,1091 715,1091 715,979 760,979" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,1016 845,2005 2145,2005 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2002" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
-<polyline points="845,1016 845,1785 1885,1785 1885,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,1016 845,1785 2145,1785 2145,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,1016 845,1949 2145,1949 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="1946" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
+<polyline points="845,1016 845,1729 1885,1729 1885,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,1016 845,1729 2145,1729 2145,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="325,516 325,841 585,841 585,1166" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="585,1240 585,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="585" y="2991" text-anchor="middle" font-size="9.5" fill="#475569">SharePoint OAuth</text>
 <polyline points="585,1240 585,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="3103" text-anchor="middle" font-size="9.5" fill="#475569">SharePoint OAuth</text>
+<text x="585" y="3103" text-anchor="middle" font-size="9.5" fill="#475569">GDrive OAuth</text>
 <polyline points="585,1240 585,3218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="3215" text-anchor="middle" font-size="9.5" fill="#475569">GDrive OAuth</text>
-<polyline points="585,1240 585,3330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="3327" text-anchor="middle" font-size="9.5" fill="#475569">Trello Token</text>
+<text x="585" y="3215" text-anchor="middle" font-size="9.5" fill="#475569">Trello Token</text>
+<polyline points="585,2994 585,2117 845,2117 845,1240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="585,3106 585,2173 845,2173 845,1240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="585,3218 585,2229 845,2229 845,1240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="585,3330 585,2285 845,2285 845,1240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,1240 845,1841 1105,1841 1105,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,1240 845,1785 1105,1785 1105,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="930,1203 1020,1203" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="1020" y="1200" text-anchor="middle" font-size="9.5" fill="#475569">Initial-Sync</text>
 <polyline points="1105,1240 1105,1453 1365,1453 1365,1666" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1105,1240 1105,1509 1365,1509 1365,1778" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,1203 1495,1203 1495,1815 1800,1815" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,1203 1495,1203 1495,1703 1800,1703" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,1203 1495,1203 1495,1927 1800,1927" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1105,1240 1105,1841 1885,1841 1885,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1885" y="1838" text-anchor="middle" font-size="9.5" fill="#475569">retrySource</text>
+<polyline points="1105,1240 1105,1785 1885,1785 1885,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1885" y="1782" text-anchor="middle" font-size="9.5" fill="#475569">retrySource</text>
 <polyline points="1450,1703 1540,1703" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1450,1815 1495,1815 1495,1703 1540,1703" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1625,1740 1625,1778" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1625,1852 1625,2423 585,2423 585,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1625,1852 1625,2479 585,2479 585,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1625,1852 1625,2535 585,2535 585,3218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1625,1852 1625,1890" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1625,1964 1625,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1625,1964 1625,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1625,1964 1625,2666" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1625,1964 1625,2203 1885,2203 1885,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1885" y="2200" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
-<polyline points="1885,1852 1885,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1885,1740 1885,2535 585,2535 585,3330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1885,1964 1885,2591 585,2591 585,3218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1800,1927 1495,1927 1495,2591 1190,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,2591 1800,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1365,2349 1365,1740" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1625,1964 1625,2147 1885,2147 1885,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1885" y="2144" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
+<polyline points="1190,2479 1800,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1365,2237 1365,1740" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="1365" y="1737" text-anchor="middle" font-size="9.5" fill="#475569">delta</text>
-<polyline points="1365,2349 1365,1852" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1365,2237 1365,1852" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="1365" y="1849" text-anchor="middle" font-size="9.5" fill="#475569">delta</text>
-<polyline points="1365,2573 1365,1852" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1365,2461 1365,1852" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="1365" y="1849" text-anchor="middle" font-size="9.5" fill="#475569">reconcile</text>
-<polyline points="1365,2461 1365,1964" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1383,2703 1462,2703 1462,2591 1540,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1365,1964 1365,2591 585,2591 585,3218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1365,1964 1365,2259 1625,2259 1625,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1365,1964 1365,2203 1885,2203 1885,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1885" y="2200" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
-<polyline points="1885,2349 1885,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1885,2442 1885,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1885,2240 1885,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1885" y="2551" text-anchor="middle" font-size="9.5" fill="#475569">upsert_connector_source</text>
-<polyline points="1885,2240 1885,2341 2145,2341 2145,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2338" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
-<polyline points="2145,2349 2145,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2145,2442 2145,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2145,2240 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2991" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
-<polyline points="2145,2240 2145,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2145,2240 2145,2341 2405,2341 2405,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2405" y="2338" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
-<polyline points="2405,2349 2405,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2405,2442 2405,2240" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2405,2240 2405,2617 2145,2617 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2614" text-anchor="middle" font-size="9.5" fill="#475569">GPT-4o-mini</text>
-<polyline points="2405,2240 2405,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1383,2591 1462,2591 1462,2479 1540,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1885,2237 1885,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1885,2330 1885,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1885,2128 1885,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1885" y="2439" text-anchor="middle" font-size="9.5" fill="#475569">upsert_connector_source</text>
+<polyline points="1885,2128 1885,2229 2145,2229 2145,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="2226" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
+<polyline points="2145,2237 2145,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2145,2330 2145,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2145,2128 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="2879" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
+<polyline points="2145,2128 2145,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2145,2128 2145,2229 2405,2229 2405,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2405" y="2226" text-anchor="middle" font-size="9.5" fill="#475569">enqueue</text>
+<polyline points="2405,2237 2405,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2405,2330 2405,2128" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2405,2128 2405,2505 2145,2505 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="2502" text-anchor="middle" font-size="9.5" fill="#475569">GPT-4o-mini</text>
+<polyline points="2405,2128 2405,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1105,161 1105,830" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1105,904 1105,1729 2665,1729 2665,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2665" y="1726" text-anchor="middle" font-size="9.5" fill="#475569">User-Message</text>
+<polyline points="1105,904 1105,1673 2665,1673 2665,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2665" y="1670" text-anchor="middle" font-size="9.5" fill="#475569">User-Message</text>
 <polyline points="1190,867 1280,867" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1365,904 1365,2005 2145,2005 2145,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2002" text-anchor="middle" font-size="9.5" fill="#475569">Haiku: rewrite/expand</text>
+<polyline points="1365,904 1365,1949 2145,1949 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="1946" text-anchor="middle" font-size="9.5" fill="#475569">Haiku: rewrite/expand</text>
 <polyline points="1450,867 1540,867" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1625,904 1625,1949 2145,1949 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="1946" text-anchor="middle" font-size="9.5" fill="#475569">Query-Embedding</text>
-<polyline points="1625,904 1625,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1710,2479 1885,2479 1885,2591 2060,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1885" y="2588" text-anchor="middle" font-size="9.5" fill="#475569">Vektor + FTS</text>
+<polyline points="1625,904 1625,1893 2145,1893 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="1890" text-anchor="middle" font-size="9.5" fill="#475569">Query-Embedding</text>
+<polyline points="1625,904 1625,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1710,2367 1885,2367 1885,2479 2060,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1885" y="2476" text-anchor="middle" font-size="9.5" fill="#475569">Vektor + FTS</text>
 <polyline points="1710,867 2060,867" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2145,904 2145,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="3103" text-anchor="middle" font-size="9.5" fill="#475569">Claude Sonnet</text>
 <polyline points="2145,904 2145,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2145" y="2991" text-anchor="middle" font-size="9.5" fill="#475569">GPT-4o (Fallback)</text>
-<polyline points="2145,904 2145,1729 2665,1729 2665,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2665" y="1726" text-anchor="middle" font-size="9.5" fill="#475569">Assistant-Message</text>
-<polyline points="2665,2554 2665,2516" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="2991" text-anchor="middle" font-size="9.5" fill="#475569">Claude Sonnet</text>
+<polyline points="2145,904 2145,2882" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2145" y="2879" text-anchor="middle" font-size="9.5" fill="#475569">GPT-4o (Fallback)</text>
+<polyline points="2145,904 2145,1673 2665,1673 2665,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2665" y="1670" text-anchor="middle" font-size="9.5" fill="#475569">Assistant-Message</text>
+<polyline points="2665,2442 2665,2404" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="1105,292 1105,617 1625,617 1625,942" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1625,1016 1625,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1625,1016 1625,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="2145,830 2145,505 2665,505 2665,180" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="2665" y="502" text-anchor="middle" font-size="9.5" fill="#475569">Antwort</text>
 <polyline points="2665,180 2665,830" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2665,904 2665,2330" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2665,904 2665,2218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="585,516 585,1278" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="670,1315 1235,1315 1235,2591 1800,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1800,2591 1755,2591 1755,2479 1710,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1755" y="2476" text-anchor="middle" font-size="9.5" fill="#475569">RLS-Filter</text>
+<polyline points="670,1315 1235,1315 1235,2479 1800,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1800,2479 1755,2479 1755,2367 1710,2367" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1755" y="2364" text-anchor="middle" font-size="9.5" fill="#475569">RLS-Filter</text>
 <polyline points="325,628 325,1009 585,1009 585,1390" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="670,1427 1755,1427 1755,2591 2840,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="670,1427 1755,1427 1755,2479 2840,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="670,1427 760,1427" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="845,1464 845,2147 1105,2147 1105,2830" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,2867 2015,2867 2015,3143 2840,3143" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="1190,2867 2015,2867 2015,2591 2840,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="845,1464 845,2091 1105,2091 1105,2718" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1190,2755 2015,2755 2015,3031 2840,3031" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="1190,2755 2015,2755 2015,2479 2840,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="585,628 585,1502" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="585,1576 585,3218" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="585" y="3215" text-anchor="middle" font-size="9.5" fill="#475569">Calendar OAuth</text>
-<polyline points="585,1576 585,2065 845,2065 845,2554" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="585,1576 585,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="585" y="3103" text-anchor="middle" font-size="9.5" fill="#475569">Calendar OAuth</text>
+<polyline points="585,1576 585,2009 845,2009 845,2442" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <polyline points="670,1539 715,1539 715,1427 760,1427" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
 <text x="715" y="1424" text-anchor="middle" font-size="9.5" fill="#475569">syncVapiConfig</text>
-<polyline points="2683,3031 2762,3031 2762,3143 2840,3143" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="2925,3106 2925,2904" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2925" y="2901" text-anchor="middle" font-size="9.5" fill="#475569">assistant-request / tool-calls</text>
-<polyline points="2840,2867 2275,2867 2275,2479 1710,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2275" y="2476" text-anchor="middle" font-size="9.5" fill="#475569">search_knowledge</text>
-<polyline points="2925,2830 2925,2628" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2925" y="2625" text-anchor="middle" font-size="9.5" fill="#475569">Org-Lookup</text>
-<polyline points="2840,2867 1755,2867 1755,3255 670,3255" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="1755" y="3252" text-anchor="middle" font-size="9.5" fill="#475569">Slots / Termin</text>
-<polyline points="2925,3106 2925,3005 3185,3005 3185,2904" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="3185" y="3002" text-anchor="middle" font-size="9.5" fill="#475569">end-of-call-report</text>
-<polyline points="3100,2867 2535,2867 2535,2591 1970,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2535" y="2588" text-anchor="middle" font-size="9.5" fill="#475569">Transkript-Source</text>
-<polyline points="3100,2867 2665,2867 2665,3031 2230,3031" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2665" y="3028" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
-<polyline points="3100,2867 2665,2867 2665,2591 2230,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="3100,2867 2665,2867 2665,3143 2230,3143" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2665" y="3140" text-anchor="middle" font-size="9.5" fill="#475569">Action-Items</text>
-<polyline points="3100,2867 2795,2867 2795,2591 2490,2591" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="2795" y="2588" text-anchor="middle" font-size="9.5" fill="#475569">match_caller_to_contact</text>
-<polyline points="3185,2830 3185,2628" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<polyline points="3185,2904 3185,3106" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
-<text x="3185" y="3103" text-anchor="middle" font-size="9.5" fill="#475569">E-Mail</text>
+<polyline points="2683,2919 2762,2919 2762,3031 2840,3031" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="2925,2994 2925,2792" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2925" y="2789" text-anchor="middle" font-size="9.5" fill="#475569">assistant-request / tool-calls</text>
+<polyline points="2840,2755 2275,2755 2275,2367 1710,2367" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2275" y="2364" text-anchor="middle" font-size="9.5" fill="#475569">search_knowledge</text>
+<polyline points="2925,2718 2925,2516" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2925" y="2513" text-anchor="middle" font-size="9.5" fill="#475569">Org-Lookup</text>
+<polyline points="2840,2755 1755,2755 1755,3143 670,3143" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="1755" y="3140" text-anchor="middle" font-size="9.5" fill="#475569">Slots / Termin</text>
+<polyline points="2925,2994 2925,2893 3185,2893 3185,2792" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="3185" y="2890" text-anchor="middle" font-size="9.5" fill="#475569">end-of-call-report</text>
+<polyline points="3100,2755 2535,2755 2535,2479 1970,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2535" y="2476" text-anchor="middle" font-size="9.5" fill="#475569">Transkript-Source</text>
+<polyline points="3100,2755 2665,2755 2665,2919 2230,2919" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2665" y="2916" text-anchor="middle" font-size="9.5" fill="#475569">Embeddings</text>
+<polyline points="3100,2755 2665,2755 2665,2479 2230,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="3100,2755 2665,2755 2665,3031 2230,3031" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2665" y="3028" text-anchor="middle" font-size="9.5" fill="#475569">Action-Items</text>
+<polyline points="3100,2755 2795,2755 2795,2479 2490,2479" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="2795" y="2476" text-anchor="middle" font-size="9.5" fill="#475569">match_caller_to_contact</text>
+<polyline points="3185,2718 3185,2516" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<polyline points="3185,2792 3185,2994" fill="none" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrow)"/>
+<text x="3185" y="2991" text-anchor="middle" font-size="9.5" fill="#475569">E-Mail</text>
 <circle cx="325" cy="143" r="18" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
 <text x="325" y="173" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Registrieren /</text>
 <text x="325" y="183" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Anmelden</text>
 <rect x="760" y="106" width="170" height="74" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-<text x="845" y="143" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Onboarding ausfüllen</text>
+<text x="845" y="137" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">hAIway-Ops: Kunden-Org</text>
+<text x="845" y="149" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">anlegen (Skript)</text>
 <rect x="240" y="218" width="170" height="74" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-<text x="325" y="243" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Plattform-Admin: Kunden,</text>
-<text x="325" y="255" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Features, Branding,</text>
-<text x="325" y="267" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">KI-Settings</text>
+<text x="325" y="249" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Plattform-Admin: Kunden,</text>
+<text x="325" y="261" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Features, KI-Settings</text>
 <rect x="240" y="330" width="170" height="74" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
 <text x="325" y="361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Quelle hochladen (Text /</text>
 <text x="325" y="373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">PDF / Audio)</text>
@@ -190,7 +177,7 @@
 <rect x="240" y="442" width="170" height="74" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
 <text x="325" y="467" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Connector verbinden</text>
 <text x="325" y="479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(SharePoint / GDrive /</text>
-<text x="325" y="491" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trello / Shopware)</text>
+<text x="325" y="491" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trello)</text>
 <rect x="500" y="442" width="170" height="74" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
 <text x="585" y="473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Berechtigungen &amp; Ordner</text>
 <text x="585" y="485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">verwalten</text>
@@ -237,8 +224,7 @@
 <text x="585" y="1539" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">exchangeGoogleCode /</text>
 <text x="585" y="1551" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">saveCalendarSettings</text>
 <rect x="760" y="830" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="845" y="861" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">saveBranding /</text>
-<text x="845" y="873" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">saveAiSettings</text>
+<text x="845" y="867" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">saveAiSettings</text>
 <rect x="760" y="942" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
 <text x="845" y="967" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">storeChunks ·</text>
 <text x="845" y="979" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">splitIntoChunks +</text>
@@ -253,8 +239,8 @@
 <text x="845" y="1421" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">provisionVapiAssistant /</text>
 <text x="845" y="1433" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">syncVapiConfig</text>
 <rect x="1020" y="718" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1105" y="749" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">onboard_organization_v2</text>
-<text x="1105" y="761" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">aufrufen</text>
+<text x="1105" y="749" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">scripts/ops/create-customer-org.mjs</text>
+<text x="1105" y="761" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Ops-Skript)</text>
 <rect x="1020" y="830" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
 <text x="1105" y="861" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">sendMessage</text>
 <text x="1105" y="873" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(RAG-Orchestrierung)</text>
@@ -287,11 +273,6 @@
 <text x="1365" y="1803" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">connector-gdrive</text>
 <text x="1365" y="1815" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(initial / delta /</text>
 <text x="1365" y="1827" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">reconcile)</text>
-<rect x="1280" y="1890" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1365" y="1927" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">sync-google-calendar</text>
-<rect x="1280" y="2002" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1365" y="2033" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-imap-poll</text>
-<text x="1365" y="2045" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(geplant · 501)</text>
 <rect x="1540" y="1666" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
 <text x="1625" y="1697" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">try_acquire_sync_lock +</text>
 <text x="1625" y="1709" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">start_integration_run</text>
@@ -301,150 +282,136 @@
 <rect x="1540" y="1890" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
 <text x="1625" y="1921" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">raw_events schreiben +</text>
 <text x="1625" y="1933" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">finish_integration_run</text>
-<rect x="1800" y="1666" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1885" y="1697" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">connector-trello (Karte</text>
-<text x="1885" y="1709" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">schreiben)</text>
-<rect x="1800" y="1778" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1885" y="1809" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">connector-shopware</text>
-<text x="1885" y="1821" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Order / Customer lesen)</text>
-<rect x="1800" y="1890" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1885" y="1921" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">connector-writeback</text>
-<text x="1885" y="1933" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(rename / delete)</text>
-<rect x="1800" y="2166" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1885" y="2191" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-normalize ·</text>
-<text x="1885" y="2203" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">raw_events →</text>
-<text x="1885" y="2215" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">entities/sources</text>
-<rect x="2060" y="2166" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2145" y="2191" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-embed · Chunking</text>
-<text x="2145" y="2203" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">+ Embeddings →</text>
-<text x="2145" y="2215" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">content_chunks</text>
-<rect x="2320" y="2166" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2405" y="2197" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-extract-entities</text>
-<text x="2405" y="2209" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">· GPT-4o-mini → CRM</text>
-<rect x="500" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="585" y="2355" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trigger</text>
-<text x="585" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">handle_new_profile →</text>
-<text x="585" y="2379" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">profiles</text>
+<rect x="1800" y="2054" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="1885" y="2079" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-normalize ·</text>
+<text x="1885" y="2091" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">raw_events →</text>
+<text x="1885" y="2103" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">entities/sources</text>
+<rect x="2060" y="2054" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="2145" y="2079" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-embed · Chunking</text>
+<text x="2145" y="2091" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">+ Embeddings →</text>
+<text x="2145" y="2103" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">content_chunks</text>
+<rect x="2320" y="2054" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="2405" y="2085" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">worker-extract-entities</text>
+<text x="2405" y="2097" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">· GPT-4o-mini → CRM</text>
+<rect x="500" y="2218" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="585" y="2243" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trigger</text>
+<text x="585" y="2255" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">handle_new_profile →</text>
+<text x="585" y="2267" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">profiles</text>
+<rect x="760" y="2218" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="845" y="2243" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">organizations</text>
+<text x="845" y="2255" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(settings.ai,</text>
+<text x="845" y="2267" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">metadata.branding)</text>
 <rect x="760" y="2330" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="845" y="2361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">organizations (settings:</text>
-<text x="845" y="2373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">branding, ai)</text>
+<text x="845" y="2361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">job_failures</text>
+<text x="845" y="2373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Dead-Letter)</text>
 <rect x="760" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="845" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">job_failures</text>
-<text x="845" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Dead-Letter)</text>
-<rect x="760" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="845" y="2591" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">calendar_integrations</text>
-<rect x="1020" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="1105" y="2355" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC</text>
-<text x="1105" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">onboard_organization_v2</text>
-<text x="1105" y="2379" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">→ org + members</text>
-<rect x="1020" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="1105" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">organization_integrations</text>
-<text x="1105" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Credentials)</text>
-<rect x="1020" y="2554" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="1105" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC soft_delete /</text>
-<text x="1105" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">restore / purge_source</text>
-<circle cx="1365" cy="2367" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="1365" y="2397" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron: connector</text>
-<text x="1365" y="2407" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">delta-sync (15</text>
-<text x="1365" y="2417" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">min)</text>
+<text x="845" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">calendar_integrations</text>
+<rect x="1020" y="2218" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="1105" y="2243" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC</text>
+<text x="1105" y="2255" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">onboard_organization_v2</text>
+<text x="1105" y="2267" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">→ org + members</text>
+<rect x="1020" y="2330" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="1105" y="2361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">organization_integrations</text>
+<text x="1105" y="2373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Credentials)</text>
+<rect x="1020" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="1105" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC soft_delete /</text>
+<text x="1105" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">restore / purge_source</text>
+<circle cx="1365" cy="2255" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+<text x="1365" y="2285" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron: connector</text>
+<text x="1365" y="2295" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">delta-sync (15</text>
+<text x="1365" y="2305" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">min)</text>
 <circle cx="1365" cy="2479" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
 <text x="1365" y="2509" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
-<text x="1365" y="2519" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">sync-google-calendar</text>
-<text x="1365" y="2529" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(15 min)</text>
+<text x="1365" y="2519" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">reconcile-connectors</text>
+<text x="1365" y="2529" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(täglich)</text>
 <circle cx="1365" cy="2591" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="1365" y="2621" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
-<text x="1365" y="2631" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">reconcile-connectors</text>
+<text x="1365" y="2621" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron: raw_events</text>
+<text x="1365" y="2631" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Partition-Rollover</text>
 <text x="1365" y="2641" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(täglich)</text>
-<circle cx="1365" cy="2703" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="1365" y="2733" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron: raw_events</text>
-<text x="1365" y="2743" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Partition-Rollover</text>
-<text x="1365" y="2753" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(täglich)</text>
-<rect x="1540" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="1625" y="2467" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC</text>
-<text x="1625" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">hybrid_search_boosted /</text>
-<text x="1625" y="2491" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">match_chunks (RLS)</text>
+<rect x="1540" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="1625" y="2355" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">RPC</text>
+<text x="1625" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">hybrid_search_boosted /</text>
+<text x="1625" y="2379" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">match_chunks (RLS)</text>
+<rect x="1540" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="1625" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">raw_events (Bronze,</text>
+<text x="1625" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">partitioniert)</text>
 <rect x="1540" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="1625" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">raw_events (Bronze,</text>
-<text x="1625" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">partitioniert)</text>
-<rect x="1540" y="2666" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="1625" y="2697" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">integration_runs</text>
-<text x="1625" y="2709" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Observability / KPI)</text>
-<circle cx="1885" cy="2367" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="1885" y="2397" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
-<text x="1885" y="2407" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-normalize</text>
-<text x="1885" y="2417" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(2 min)</text>
-<rect x="1800" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="1885" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: normalize-Queue</text>
-<rect x="1800" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="1885" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">sources (Silver) +</text>
-<text x="1885" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Ordner / Berechtigungen</text>
-<circle cx="2145" cy="2367" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="2145" y="2397" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
-<text x="2145" y="2407" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-embed (2</text>
-<text x="2145" y="2417" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">min)</text>
-<rect x="2060" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="2145" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: embed-Queue</text>
-<rect x="2060" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="2145" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">content_chunks +</text>
-<text x="2145" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgvector (Gold)</text>
-<circle cx="2405" cy="2367" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
-<text x="2405" y="2397" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
-<text x="2405" y="2407" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-extract-entities</text>
-<text x="2405" y="2417" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(2 min)</text>
-<rect x="2320" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="2405" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: extract-Queue</text>
-<rect x="2320" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="2405" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">contacts / companies /</text>
-<text x="2405" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">projects + tags</text>
-<rect x="2580" y="2330" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="2665" y="2361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_message_reviews +</text>
-<text x="2665" y="2373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">admin-KPI-RPC</text>
-<rect x="2580" y="2442" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
-<text x="2665" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trigger</text>
-<text x="2665" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">touch_chat_conversation</text>
-<rect x="2580" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="2665" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_conversations /</text>
-<text x="2665" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_messages</text>
-<rect x="2840" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="2925" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone_assistants /</text>
-<text x="2925" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone_numbers</text>
-<rect x="3100" y="2554" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
-<text x="3185" y="2591" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">call_logs / activities</text>
-<rect x="1020" y="2830" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1105" y="2861" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-provision</text>
-<text x="1105" y="2873" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Assistent / Nummer)</text>
-<rect x="2840" y="2830" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2925" y="2855" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-rag</text>
-<text x="2925" y="2867" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Echtzeit-Retrieval im</text>
-<text x="2925" y="2879" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Anruf)</text>
-<rect x="3100" y="2830" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="3185" y="2861" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-call-complete</text>
-<text x="3185" y="2873" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Transkript → Wissen)</text>
+<text x="1625" y="2585" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">integration_runs</text>
+<text x="1625" y="2597" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Observability / KPI)</text>
+<circle cx="1885" cy="2255" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+<text x="1885" y="2285" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
+<text x="1885" y="2295" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-normalize</text>
+<text x="1885" y="2305" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(2 min)</text>
+<rect x="1800" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="1885" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: normalize-Queue</text>
+<rect x="1800" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="1885" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">sources (Silver) +</text>
+<text x="1885" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Ordner / Berechtigungen</text>
+<circle cx="2145" cy="2255" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+<text x="2145" y="2285" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
+<text x="2145" y="2295" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-embed (2</text>
+<text x="2145" y="2305" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">min)</text>
+<rect x="2060" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="2145" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: embed-Queue</text>
+<rect x="2060" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="2145" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">content_chunks +</text>
+<text x="2145" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgvector (Gold)</text>
+<circle cx="2405" cy="2255" r="18" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+<text x="2405" y="2285" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Cron:</text>
+<text x="2405" y="2295" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">worker-extract-entities</text>
+<text x="2405" y="2305" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">(2 min)</text>
+<rect x="2320" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="2405" y="2367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">pgmq: extract-Queue</text>
+<rect x="2320" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="2405" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">contacts / companies /</text>
+<text x="2405" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">projects</text>
+<rect x="2580" y="2218" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="2665" y="2249" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_message_reviews +</text>
+<text x="2665" y="2261" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">admin-KPI-RPC</text>
+<rect x="2580" y="2330" width="170" height="74" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<text x="2665" y="2361" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trigger</text>
+<text x="2665" y="2373" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">touch_chat_conversation</text>
+<rect x="2580" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="2665" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_conversations /</text>
+<text x="2665" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">chat_messages</text>
+<rect x="2840" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="2925" y="2473" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone_assistants /</text>
+<text x="2925" y="2485" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone_numbers</text>
+<rect x="3100" y="2442" width="170" height="74" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.5"/>
+<text x="3185" y="2479" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">call_logs / activities</text>
+<rect x="1020" y="2718" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="1105" y="2749" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-provision</text>
+<text x="1105" y="2761" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Assistent / Nummer)</text>
+<rect x="2840" y="2718" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="2925" y="2743" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-rag</text>
+<text x="2925" y="2755" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Echtzeit-Retrieval im</text>
+<text x="2925" y="2767" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Anruf)</text>
+<rect x="3100" y="2718" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="3185" y="2749" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">phone-assistant-call-complete</text>
+<text x="3185" y="2761" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(Transkript → Wissen)</text>
+<rect x="500" y="2882" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="585" y="2913" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Supabase Auth (Magic</text>
+<text x="585" y="2925" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Link / OTP)</text>
 <rect x="500" y="2994" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="585" y="3025" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Supabase Auth (Magic</text>
-<text x="585" y="3037" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Link / OTP)</text>
+<text x="585" y="3025" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Microsoft OAuth / Graph</text>
+<text x="585" y="3037" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">API</text>
 <rect x="500" y="3106" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="585" y="3137" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Microsoft OAuth / Graph</text>
-<text x="585" y="3149" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">API</text>
+<text x="585" y="3137" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Google OAuth / Drive /</text>
+<text x="585" y="3149" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Calendar API</text>
 <rect x="500" y="3218" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="585" y="3249" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Google OAuth / Drive /</text>
-<text x="585" y="3261" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Calendar API</text>
-<rect x="500" y="3330" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="585" y="3367" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trello API</text>
-<rect x="1800" y="3106" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="1885" y="3143" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Shopware Admin API</text>
+<text x="585" y="3255" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Trello API</text>
+<rect x="2060" y="2882" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="2145" y="2913" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">OpenAI (Embeddings ·</text>
+<text x="2145" y="2925" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Whisper · GPT-4o-mini)</text>
 <rect x="2060" y="2994" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2145" y="3025" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">OpenAI (Embeddings ·</text>
-<text x="2145" y="3037" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Whisper · GPT-4o-mini)</text>
-<rect x="2060" y="3106" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2145" y="3137" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Anthropic (Claude Sonnet</text>
-<text x="2145" y="3149" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">/ Haiku)</text>
-<circle cx="2665" cy="3031" r="18" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
-<text x="2665" y="3061" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Anrufer wählt</text>
-<text x="2665" y="3071" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Nummer</text>
-<rect x="2840" y="3106" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="2925" y="3143" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Vapi (Voice · Telefonie)</text>
-<rect x="3100" y="3106" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
-<text x="3185" y="3137" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Resend</text>
-<text x="3185" y="3149" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(E-Mail-Benachrichtigung)</text>
+<text x="2145" y="3025" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Anthropic (Claude Sonnet</text>
+<text x="2145" y="3037" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">/ Haiku)</text>
+<circle cx="2665" cy="2919" r="18" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
+<text x="2665" y="2949" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Anrufer wählt</text>
+<text x="2665" y="2959" text-anchor="middle" dominant-baseline="middle" font-size="8.5" fill="#0f172a">Nummer</text>
+<rect x="2840" y="2994" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="2925" y="3031" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Vapi (Voice · Telefonie)</text>
+<rect x="3100" y="2994" width="170" height="74" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="3185" y="3025" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">Resend</text>
+<text x="3185" y="3037" text-anchor="middle" dominant-baseline="middle" font-size="10.5" fill="#0f172a">(E-Mail-Benachrichtigung)</text>
 </svg>

@@ -107,7 +107,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         contextLabel = "Intern";
       }
     } catch {
-      // User has no org membership yet (onboarding)
+      // User has no org membership yet — Shell ohne Branding/Persona rendern.
     }
   }
 

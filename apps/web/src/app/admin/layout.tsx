@@ -5,7 +5,7 @@ import { BERATER_ROLES, getMemberRole } from "@/lib/db/org-context";
 /**
  * /admin/* — Pages, die HAIway-internes Dashboard heute halten und parallel
  * vom Berater-Cockpit als Sub-Seiten genutzt werden (Integrationen,
- * Retrieval-Qualität, Branding, …). Gate auf Platform-Admin ODER Berater-Persona
+ * Retrieval-Qualität, …). Gate auf Platform-Admin ODER Berater-Persona
  * (`role IN BERATER_ROLES`); End-User landen auf /.
  *
  * Layout selbst rendert nur das Gate. Die Top-Bar + Tabs kommen aus dem

@@ -5,12 +5,11 @@ import {
   IconHome,
   IconSources,
   IconShield,
-  IconChart,
   IconChat,
   IconPlug,
   IconPhone,
-  IconBuilding,
-  IconBox,
+  IconImport,
+  IconTrash,
   IconCrm,
   NavLink,
   NavGroupBlock,
@@ -24,7 +23,7 @@ import {
  *
  * Variante "manager" (default) zeigt die volle Navigation inkl. Verwaltung.
  * Variante "berater" zeigt nur den Arbeitsbereich (Outcome + Datenpools) —
- * ohne Berechtigungen, Sync-Verwaltung und Branding.
+ * ohne Berechtigungen, Papierkorb und Sync-Verwaltung.
  */
 export function NavBerater({
   hasPhoneAssistant,
@@ -54,8 +53,13 @@ export function NavBerater({
       label: "Daten & Zugriff",
       items: [
         { href: "/admin/daten", label: "Datenpools", icon: IconSources },
+        { href: "/sources", label: "Dateien", icon: IconImport },
+        { href: "/quellen", label: "Verbundene Quellen", icon: IconPlug },
         ...(isManager
-          ? [{ href: "/berechtigungen", label: "Berechtigungen", icon: IconShield }]
+          ? [
+              { href: "/berechtigungen", label: "Berechtigungen", icon: IconShield },
+              { href: "/papierkorb", label: "Papierkorb", icon: IconTrash },
+            ]
           : []),
       ],
     },
@@ -63,9 +67,11 @@ export function NavBerater({
       label: "Outcome",
       items: [
         { href: "/admin/cockpit", label: "Cockpit", icon: IconChat },
-        { href: "/admin/automatisierungen", label: "Automatisierungen", icon: IconBox },
         ...(hasCrm ? [crmItem] : []),
-        { href: "/admin/retrieval-qualitaet", label: "KPIs", icon: IconChart },
+        // No /admin/retrieval-qualitaet here: the page is cross-tenant and
+        // platform-admin-only (every action in its actions.ts calls
+        // requireAdmin() -> isPlatformAdmin()). Offering it to Berater produced
+        // a dead link — it is reachable from the hAIway nav instead.
       ],
     },
     ...(isManager
@@ -77,7 +83,6 @@ export function NavBerater({
               ...(hasCrmAdmin
                 ? [{ href: "/admin/crm", label: "CRM-Zugänge", icon: IconCrm }]
                 : []),
-              { href: "/admin/branding", label: "Branding", icon: IconBuilding },
               ...(hasPhoneAssistant
                 ? [{ href: "/telefon-assistent", label: "Telefon", icon: IconPhone }]
                 : []),

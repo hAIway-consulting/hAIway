@@ -32,7 +32,7 @@ Startpunkt.
 4. **RAG-Pipeline · Worker** — `worker-normalize` → `worker-embed` → `worker-extract-entities` (Bronze → Silver → Gold).
 5. **Datenbank & Orchestrierung** — Supabase: `pg_cron`-Jobs, `pgmq`-Queues, Trigger, RPC, Tabellen-Domänen.
 6. **Telefon-Assistent (Vapi)** — Provisionierung, Echtzeit-Retrieval im Anruf, Nachbearbeitung.
-7. **Externe Dienste** — OpenAI, Anthropic, Google, Microsoft, Trello, Shopware, Vapi, Resend.
+7. **Externe Dienste** — OpenAI, Anthropic, Google, Microsoft, Trello, Vapi, Resend.
 
 ## Farb-/Form-Legende (SVG/PNG-Vorschau)
 
@@ -48,7 +48,7 @@ Startpunkt.
 
 ## Die wichtigsten durchgehenden Ketten
 
-- **Ingestion-Pipeline:** Connector/`sync-google-calendar` → `raw_events` (Bronze) → `pgmq normalize` → `worker-normalize` → `sources` (Silver) → `pgmq embed` → `worker-embed` → `content_chunks` + pgvector (Gold) → `pgmq extract` → `worker-extract-entities` → `contacts/companies/projects`. Getaktet über `pg_cron` (alle 2 Min., Connector-Delta alle 15 Min.).
+- **Ingestion-Pipeline:** Connector (SharePoint / Google Drive) → `raw_events` (Bronze) → `pgmq normalize` → `worker-normalize` → `sources` (Silver) → `pgmq embed` → `worker-embed` → `content_chunks` + pgvector (Gold) → `pgmq extract` → `worker-extract-entities` → `contacts/companies/projects`. Getaktet über `pg_cron` (alle 2 Min., Connector-Delta alle 15 Min.).
 - **Chat-RAG:** `sendMessage` → User-Message speichern → `rewriteFollowUpQuery`/`expandQuery` (Claude Haiku) → `boostedHybridSearch` (RPC `hybrid_search_boosted`, RLS-gefiltert) → `generateAnswer` (Claude Sonnet / GPT-4o) → Assistant-Message → Trigger `touch_chat_conversation`. Admin-Loop: `submitReview` → `chat_message_reviews` → KPI-RPCs.
 - **Telefon-Assistent:** `createOrUpdateAssistant` → `provisionVapiAssistant` → Vapi. Anruf: Vapi-Webhook → `phone-assistant-rag` (`hybrid_search_boosted`, Kalender-Slots) → Antwort. Anrufende: `phone-assistant-call-complete` → Transkript als Source + Chunks + `call_logs` + Action-Items (Anthropic) + E-Mail (Resend).
 

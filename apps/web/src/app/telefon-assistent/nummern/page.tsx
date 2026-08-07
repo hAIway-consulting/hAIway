@@ -54,9 +54,9 @@ export default async function PhoneNumbersPage() {
             Keine Nummern konfiguriert
           </p>
           <p className="text-xs" style={styles.muted}>
-            Telefonnummern werden ueber die Vapi-Integration provisioniert.
-            Sobald die VAPI_API_KEY Umgebungsvariable gesetzt ist, koennen
-            Nummern automatisch zugewiesen werden.
+            Fuer diese Organisation ist noch keine Rufnummer hinterlegt.
+            Rufnummern werden von hAIway eingerichtet und erscheinen
+            anschliessend automatisch in dieser Liste.
           </p>
         </div>
       )}

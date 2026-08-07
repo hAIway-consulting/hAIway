@@ -4,7 +4,7 @@
 // Naming derives from --for:
 //   slug   claude-test-<customer>
 //   name   [CLAUDE-TEST] <customer>
-//   tester claude-tester+<customer>@bernwald.net / Test1234!
+//   tester claude-tester+<customer>@bernwald.net / $SANDBOX_TESTER_PASSWORD
 //
 // Run with:
 //   node --env-file=apps/web/.env.local scripts/ops/create-sandbox-org.mjs --for mamalila [--plan standard] [--apply]
@@ -22,9 +22,16 @@ async function main() {
   const plan = typeof flags.plan === "string" ? flags.plan : "standard";
   const slug = `claude-test-${customer}`;
   const name = `[CLAUDE-TEST] ${customer}`;
+  // Password from the environment only — never a literal in the repo.
+  const testerPassword = process.env.SANDBOX_TESTER_PASSWORD;
+  if (!testerPassword) {
+    fail(
+      "SANDBOX_TESTER_PASSWORD is required — set it in apps/web/.env.local (never in the repo) and run with --env-file=apps/web/.env.local",
+    );
+  }
   const tester = {
     email: `claude-tester+${customer}@bernwald.net`,
-    password: "Test1234!",
+    password: testerPassword,
     full_name: `[CLAUDE-TEST] Tester ${customer}`,
   };
 
@@ -126,7 +133,7 @@ async function main() {
     console.log(`✓ member  exists (role=${member.role})`);
   }
 
-  console.log(`\nready. login: ${tester.email} / ${tester.password}`);
+  console.log(`\nready. login: ${tester.email} (Passwort aus SANDBOX_TESTER_PASSWORD)`);
   console.log(`org id: ${org.id} — add it to the sandbox matrix in CLAUDE.md.`);
 }
 

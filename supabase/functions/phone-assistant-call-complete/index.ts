@@ -9,7 +9,7 @@
 
 import { getServiceClient, jsonResponse, errorResponse } from "../_shared/supabase.ts";
 import { embedText } from "../_shared/embeddings.ts";
-import { splitIntoChunks, countWords } from "../_shared/chunker.ts";
+import { splitIntoChunks, countWords } from "../_shared/transcript-chunker.ts";
 import { verifyVapiSignature } from "../_shared/vapi-verify.ts";
 
 type VapiEndOfCallReport = {
@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-vapi-signature",
+        "Access-Control-Allow-Headers": "Content-Type, x-vapi-secret, x-vapi-signature",
       },
     });
   }
@@ -57,8 +57,13 @@ Deno.serve(async (req: Request) => {
 
   const bodyText = await req.text();
 
-  // Verify webhook signature
-  const signature = req.headers.get("x-vapi-signature");
+  // Verify webhook signature. Vapi sends the serverUrlSecret as `x-vapi-secret`;
+  // `x-vapi-signature` is only the legacy fallback. Reading the legacy header
+  // alone meant every real webhook was rejected as soon as VAPI_SECRET existed —
+  // invisible while the check still failed open. phone-assistant-rag already
+  // reads both; this brings the two functions in line.
+  const signature =
+    req.headers.get("x-vapi-secret") ?? req.headers.get("x-vapi-signature");
   const valid = await verifyVapiSignature(bodyText, signature);
   if (!valid) {
     return errorResponse("Invalid signature", 401);
